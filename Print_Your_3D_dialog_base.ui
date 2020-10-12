@@ -230,6 +230,33 @@
             <string>1:5000</string>
            </property>
           </item>
+          <item>
+           <property name="text">
+            <string>10:1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>20:1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>50:1</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>100:1</string>
+           </property>
+          </item>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="pushButton_3">
+          <property name="text">
+           <string>PushButton</string>
+          </property>
          </widget>
         </item>
        </layout>

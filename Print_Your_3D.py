@@ -23,30 +23,37 @@
 """
 
 #from __future__ import absolute_import
-#import utils
+
+#import from main libraries
 import os
 import shutil
 import os.path, sys
-import processing
 import time
-from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication,QVariant, QTimer
+
+#import from PyQt
+from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication,QVariant
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDialog, QFileDialog, QProgressDialog, QProgressBar, QMainWindow, QApplication
+from qgis.PyQt.QtWidgets import QAction, QDialog, QFileDialog, QApplication
 from qgis.core import QgsProject, Qgis, QgsGeometry, QgsFeature, QgsVectorLayer, QgsField,QgsExpression,QgsExpressionContext,QgsExpressionContextUtils, QgsRasterLayer, QgsVectorFileWriter
 from qgis.utils import iface, plugins
-import numpy as np
-import matplotlib.pyplot as plt
-from scipy.spatial import Delaunay
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.tri as mtri
+
 # Initialize Qt resources from file resources.py
 from .resources import *
+
 # Import the code for the dialog
 from .Print_Your_3D_dialog import PrintYour3DDialog
-#sys.path.insert(0, os.path.abspath('.'))
-from .stl import mesh
-#from .pySTL import scaleSTL
+
+#create object
+from .create_model.pySTL import scaleSTL, pySTL
+from .create_model import create_model
+
+
+
+
+
+
+
+
 
 
 class PrintYour3D:
@@ -209,6 +216,7 @@ class PrintYour3D:
             self.dlg = PrintYour3DDialog()
             self.dlg.pushButton_2.clicked.connect(self.select_output_file)
             self.dlg.pushButton.clicked.connect(self.pixels)
+            self.dlg.pushButton.clicked.connect(self.delaunay)
             self.dlg.pushButton.clicked.connect(self.graph3d)
             self.dlg.pushButton.clicked.connect(self.stretching)
             self.dlg.pushButton_4.clicked.connect(self.pixels)
@@ -216,20 +224,27 @@ class PrintYour3D:
             self.dlg.pushButton_4.clicked.connect(self.loading)
             self.dlg.pushButton_4.clicked.connect(self.saver)
             self.dlg.pushButton_5.clicked.connect(self.shape)
-        self.layer1 = QgsProject.instance().layerTreeRoot().children()
-        self.dlg.comboBox_2.clear()
-        self.dlg.comboBox_2.addItems([layer.name() for layer in self.layer1])
-
+            self.dlg.pushButton_3.clicked.connect(self.scale)
         # Fetch the currently loaded layers
         self.layers = QgsProject.instance().layerTreeRoot().children()
+
+        #create object of class Create_model
+        self.creator = create_model.Create_model(dlg=self.dlg, current_layer=self.layers)
+
         # Clear the contents of the comboBox from previous runs
         self.dlg.comboBox.clear()
         # Populate the comboBox with names of all the loaded layers
         self.dlg.comboBox.addItems([layer.name() for layer in self.layers])
+        self.dlg.comboBox_2.clear()
+        self.dlg.comboBox_2.addItems([layer.name() for layer in self.layers])
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
+
+
+
         if result:
             self.iface.messageBar().pushMessage(
                 "Success", level=Qgis.Success, duration=3)
@@ -237,345 +252,28 @@ class PrintYour3D:
             # substitute with your code.
             pass
 
-    def delaunay(self):
-        self.X=[]
-        self.Y=[]
-        self.Z=[]
-        for x in self.list:
-            dada=x[0]
-            self.X.append(dada)
-            uu=x[1]
-            self.Y.append(uu)
-            dede=x[2]
-            self.Z.append(dede)
-        x = np.array(self.X)
-        y = np.array(self.Y)
-        z = np.array(self.Z)
-        #Delaunay
-        tri = Delaunay(np.array([x, y]).T, qhull_options=None)
-        self.faces = []
-        self.points = []
-        #text = open(r'C:\Users\szyme\AppData\Roaming\QGIS\QGIS3\profiles\default\python\plugins\print_your_3d\TRASH\sprawdzenie_wsp2.txt','w')
-        # for vert in tri.triangles:
-        for vert in tri.simplices:
-            self.faces.append([vert[0], vert[1], vert[2]])
-        for i in range(x.shape[0]):
-            self.points.append([x[i], y[i], z[i]])
-            #text.writelines(['['+str(x[i]) + ",", str(y[i]) + ",", str(z[i])+']'+','+ "\n"])
-            #text.writelines([str(x[i]) + ",", str(y[i]) + ",", str(z[i])  + "\n"])
-        #text.close()
-        return self.faces, self.points
-
-
-    X=[]
-    Y=[]
-    Z=[]
-    faces=[]
-    points=[]
-
-    def graph3d(self):
-        self.X = []
-        self.Y = []
-        self.Z = []
-        for x in self.list:
-            dada = x[0]
-            self.X.append(dada)
-            uu = x[1]
-            self.Y.append(uu)
-            dede = x[2]
-            self.Z.append(dede)
-        x = np.array(self.X)
-        y = np.array(self.Y)
-        z = np.array(self.Z)
-        tri = Delaunay(np.array([x, y]).T)
-        self.faces = []
-        self.points = []
-        for vert in tri.simplices:
-            self.faces.append([vert[0], vert[1], vert[2]])
-        for i in range(x.shape[0]):
-            self.points.append([x[i], y[i], z[i]])
-        fig = plt.figure()
-        ax = fig.add_subplot(1,1,1, projection='3d')
-        ax.plot_trisurf(x, y, z, triangles=tri.simplices, cmap=plt.cm.Spectral)
-        ax.set_title('3D_Graph')
-        ax.set_xlabel('X Label')
-        ax.set_ylabel('Y Label')
-        ax.set_zlabel('Z Label')
-        plt.show()
-    list=[]
-    border=[]
 
     def pixels(self):
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        layer = self.layers[selectedLayerIndex].layer()
-        provider = layer.dataProvider()
-        extent = provider.extent()
-        xmin = extent.xMinimum()
-        ymax = extent.yMaximum()
-        xmax = extent.xMaximum()
-        ymin = extent.yMinimum()
-        cord_sys = layer.crs().authid()
-        #print(str(extent)+'['+str(cord_sys)+']')
-        coords = "%f,%f,%f,%f " % (xmin, xmax, ymin, ymax) +'['+ str(cord_sys)+']'
-        #print(coords)
-        rows = layer.height()
-        cols = layer.width()
-        #print(str(rows) +'<---rows  - - cols---> '+str(cols))
-        block = provider.block(1, extent, cols, rows)
-
-        xsize = layer.rasterUnitsPerPixelX()
-        ysize = layer.rasterUnitsPerPixelY()
-        k=1
-        xinit = xmin + xsize / 2
-        yinit = ymax - ysize / 2
-        self.list = []
-        list_of_all=[]
-        for i in range(rows):
-            for j in range(cols):
-                x = xinit + j * xsize
-                y = yinit
-                k += 1
-                if block.value(i, j)  == -3.4028234663852886e+38: #, block.value(zewL,j) , block.value(zewP,j)]
-                    list_of_all.append([i,j,x,y,block.value(i,j)])
-                elif block.value(i,j)>=self.dlg.doubleSpinBox.value():
-                    self.list.append([x, y, block.value(i, j)])
-                    list_of_all.append([i,j,x,y,block.value(i,j)])
-                else:
-                    list_of_all.append([i,j,x,y,-3.4028234663852886e+38])
-            xinit = xmin + xsize / 2
-            yinit -= ysize
-        height=[]
-        for searching in self.list:
-                height.append(searching[2])
-        self.minimal=min(height)
-        colrow=[]
-        rowcol=[]
-        for pixelo in list_of_all:
-            rowcol.append(pixelo)
-            if pixelo[1]==j:
-                colrow.append(rowcol)
-                rowcol=[]
-        self.border=[]
-        for pixel in list_of_all:
-            if pixel[4] !=-3.4028234663852886e+38:
-                if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
-                    pixel[4] = float(self.dlg.doubleSpinBox.value())
-                    self.border.append([pixel[2],pixel[3],pixel[4]])
-                    self.list = self.border + self.list
-                else:
-                    wii=pixel[0]
-                    kol=pixel[1]
-                    pixel[4]=float(self.dlg.doubleSpinBox.value())
-                    condition1 = colrow[wii-1][kol][4]
-                    condition2 = colrow[wii][kol-1][4]
-                    condition3 = colrow[wii+1][kol][4]
-                    condition4 = colrow[wii][kol+1][4]
-
-                    if condition1> -3.4028234663852886e+38 or condition2> -3.4028234663852886e+38 or condition3> -3.4028234663852886e+38 or condition4 > -3.4028234663852886e+38:
-                        if condition1 == -3.4028234663852886e+38or condition2== -3.4028234663852886e+38 or condition3== -3.4028234663852886e+38 or condition4 == -3.4028234663852886e+38:
-                            self.border.append([pixel[2],pixel[3],pixel[4]])
-                            self.list=self.border+self.list
-
-        return self.list, self.border
-
-    def loading(self):
-
-        self.dialog = QProgressDialog()
-        self.dialog.setWindowTitle("Loading")
-        self.dialog.setLabelText("That's your progress")
-        self.bar = QProgressBar()
-        self.bar.setTextVisible(True)
-        self.dialog.setBar(self.bar)
-        self.dialog.setMinimumWidth(300)
-        self.dialog.show()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.saver)
-        self.timer.start(1000)
-
-    def saver(self):
-        # Define the 8 vertices of the cube
-        vertices = np.array(self.points)
-        # Define the 12 triangles composing the cube
-        facess = np.array(self.faces)
-        # Create the mesh
-        self.cube = mesh.Mesh(np.zeros(facess.shape[0], dtype=mesh.Mesh.dtype))
-        all_percentage = len(facess)
-        value = self.bar.value()
-        for i, f in enumerate(facess):
-            if value < all_percentage:
-                value = value + 1
-                self.bar.setValue(value)
-            else:
-                self.timer.stop()
-            for j in range(3):
-                self.cube.vectors[i][j] = vertices[f[j], :]
-
-        filename=self.dlg.lineEdit.text()
-        self.cube.save(filename)
-        #scaleSTL()
-        return self.cube
-
+        self.creator.iterator()
+    def graph3d(self):
+        self.creator.create_graph()
     def stretching(self):
-        for cords in self.list:
-            if cords[2] > self.minimal:
-                height_stretched = cords[2] - float(self.dlg.doubleSpinBox.value())
-                height_stretched = height_stretched * self.dlg.spinBox_2.value()
-                height_stretched += float(self.dlg.doubleSpinBox.value())
-                cords[2] = height_stretched
-        return self.list
-
+        self.creator.stretching()
+    def delaunay(self):
+        self.creator.delaunay()
+    def saver(self):
+        self.creator.saver()
     def shape(self):
-        horizontal=self.dlg.spinBox_3.value()
-        vertical=self.dlg.spinBox.value()
-        buffer_distance=self.dlg.doubleSpinBox_3.value()
-        output_data_type = self.dlg.spinBox_7.value()
-        output_raster_size_unit = self.dlg.spinBox_4.value()
-        no_data_value = self.dlg.spinBox_6.value()
-        layer2 = self.layer1[self.dlg.comboBox_2.currentIndex()].layer()
-        shape_dir = os.path.join(self.plugin_dir, 'TRASH')
-
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        layer_ext_cor = self.layers[selectedLayerIndex].layer()
-        provider = layer_ext_cor.dataProvider()
-        extent = provider.extent()
-        xmin = extent.xMinimum()
-        ymax = extent.yMaximum()
-        xmax = extent.xMaximum()
-        ymin = extent.yMinimum()
-        cord_sys = layer_ext_cor.crs().authid()
-        coords = "%f,%f,%f,%f " % (xmin, xmax, ymin, ymax) + '[' + str(cord_sys) + ']'
-        rows = layer_ext_cor.height()
-        cols = layer_ext_cor.width()
-
-
-        processing.run("native:buffer",
-                       {'INPUT': layer2, 'DISTANCE': buffer_distance, 'SEGMENTS': 5, 'END_CAP_STYLE': 0, 'JOIN_STYLE': 0,
-                        'MITER_LIMIT': 2, 'DISSOLVE': False,
-                        'OUTPUT': os.path.join(shape_dir, 'shape_bufor.shp')})   #### tu poprawic ten dissolve \/ zredukowac ten na dole
-
-        processing.run("native:dissolve", {
-            'INPUT': os.path.join(shape_dir, 'shape_bufor.shp') ,
-            'FIELD': [],
-            'OUTPUT': os.path.join(shape_dir, 'shape_dissolve.shp')})
-
-        processing.run("qgis:generatepointspixelcentroidsinsidepolygons",
-                       {'INPUT_RASTER': self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
-                        'INPUT_VECTOR': os.path.join(shape_dir, 'shape_dissolve.shp'),
-                        'OUTPUT': os.path.join(shape_dir, 'shape_points.shp')})
-
-        processing.run("native:setzfromraster",
-                       {'INPUT': os.path.join(shape_dir, 'shape_points.shp'),
-                        'RASTER': self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
-                        'BAND': 1, 'NODATA': 0, 'SCALE': 1,
-                        'OUTPUT': os.path.join(shape_dir, 'shape_drape.shp')})
-
-        layer3 = iface.addVectorLayer(os.path.join(shape_dir, 'shape_drape.shp'), "Shape_Drape", "ogr")
-        if not layer3:
-            print("Layer failed to load!")
-        field_name = "height"
-        #field_index = layer4.fields().indexFromName(field_name)
-        field_namess = [field.name() for field in layer3.fields()]  #jak podac tutaj plik shape_drape
-        i=0
-        for l in range(100):
-            i+=1
-            if field_name in field_namess:
-                print('Exist')
-                field_name = field_name + str(i)
-                continue
-            else:
-                print('Doesn\'t Exist')
-                # field_name == field_name
-                break
-
-        processing.run("qgis:fieldcalculator", {
-            'INPUT': os.path.join(shape_dir,'shape_drape.shp'),
-            'FIELD_NAME': field_name, 'FIELD_TYPE': 0, 'FIELD_LENGTH': 10, 'FIELD_PRECISION': 3, 'NEW_FIELD': True,
-            'FORMULA': 'z($geometry)+2', 'OUTPUT': os.path.join(shape_dir,'shape_drape_c.shp')})
-
-        processing.run("gdal:rasterize", {
-            'INPUT': os.path.join(shape_dir,'shape_drape_c.shp'),
-            'FIELD': field_name, 'BURN': 0, 'UNITS': output_raster_size_unit, 'WIDTH': cols, 'HEIGHT': rows,   #width heighy ustawic automatycznie do glownej rozdzielczosci
-            'EXTENT': coords , 'NODATA': no_data_value, 'OPTIONS': '', 'DATA_TYPE': output_data_type,
-            'INIT': None, 'INVERT': False,
-            'OUTPUT': os.path.join(shape_dir,'shape_to_raster.tif')})
-        iface.addRasterLayer(os.path.join(shape_dir,'shape_to_raster.tif'), "Shape_to_Raster")
-        QgsProject.instance().removeMapLayers([layer3.id()])
-
-        processing.run("gdal:merge", {
-            'INPUT': [self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
-                      os.path.join(shape_dir,'shape_to_raster.tif')],
-            'PCT': False, 'SEPARATE': False, 'NODATA_INPUT': None, 'NODATA_OUTPUT': None, 'OPTIONS': '', 'DATA_TYPE': 5,
-            'OUTPUT': os.path.join(shape_dir,'merged.tif')})
-        iface.addRasterLayer(os.path.join(shape_dir,'merged.tif'), "Raster_With_Shape")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        #os.rmdir(shape_dir)
-        #shutil.rmtree(shape_dir) #---- gdzie jest niby uzywane  'line_to_points.shp' wtf?
-
-        #porobic te automatyzacje z odnosnikami i WIDTH I HEIGHT w rasterize
-        #usuwac powstale pliki z folderu + utworzyc folder o nazwie shape
-        #dodac utworzony raster do rastra i zeby wyplulo model
-
-        #zapytac jakos o re usuwanie plikow, zrobic selfa na wynik koncowy szejpa zeby uzyc go w pixelach
-        #zrobic extent do szejpa
-
-
-    #to jest tylko iterator zeby dodac tif szejpowy do glownego iteratora - zastapic to jedna metodą
-    '''def iterator_shape_extent(self):
-        shape_raster_path = os.path.join(self.plugin_dir, 'TRASH\\shape_to_raster.tif')
-        #shape_raster_path = os.path.join(r'D:\STUDIA\_Semestr_5_6\Praca_Inzynierska\Dane_wyjsciowe\SIERPIEN_OD_NOWA_SHAPE\obrys.tif')
-        layer = QgsRasterLayer(shape_raster_path, "nizej")
-        provider = layer.dataProvider()
-        extent = provider.extent()
-        rows = layer.height()
-        cols = layer.width()
-        block = provider.block(1, extent, cols, rows)
-        xmin = extent.xMinimum()
-        ymax = extent.yMaximum()
-        xsize = layer.rasterUnitsPerPixelX()
-        ysize = layer.rasterUnitsPerPixelY()
-        k=1
-        xinit = xmin + xsize / 2
-        yinit = ymax - ysize / 2
-        self.listqa = []
-        for i in range(rows):
-            for j in range(cols):
-                x = xinit + j * xsize
-                y = yinit
-                k += 1
-                if block.value(i, j)  == -3.4028234663852886e+38: #, block.value(zewL,j) , block.value(zewP,j)]
-                    continue
-                elif block.value(i,j) >= self.dlg.doubleSpinBox.value():
-                    self.listqa.append([x, y, block.value(i, j)])
-                    #self.listqa.append([int(x), int(y), int(block.value(i, j)-1)])
-                    #self.listqa.append([x, y+0.05, block.value(i, j)])
-            xinit = xmin + xsize / 2
-            yinit -= ysize
-        return self.listqa'''
-
-    #def Extent(self): #--- ustalenie calego zakresu
-
+        self.creator.shape(self.plugin_dir)
+    def loading(self):
+        load = create_model.Loading_bar()
+        load.loading()
+    def scale(self):
+        set_scale = scaleSTL.Scalator(dlg = self.dlg)
+        set_scale.scaleSTL()
+        #scaleSTL.kuzwar()
+    def scale_print(self):
+        print(self.dlg.comboBox_4.currentText())
 
 
 
