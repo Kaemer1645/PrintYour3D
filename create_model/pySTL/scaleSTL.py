@@ -1,3 +1,6 @@
+#this code is designed to create scale of existed model .stl file
+
+
 from .pySTL import STLmodel
 
 class Scalator:
@@ -7,7 +10,7 @@ class Scalator:
         self.small_scale = None
         self.big_scale = None
     def scaleSTL(self):
-        model = STLmodel(str(self.dlg.lineEdit.text()))  # --- podane z menu, musi byc wypelnione ---
+        model = STLmodel(str(self.dlg.lineEdit.text()))
         scale = str(self.dlg.comboBox_4.currentText())
         scale = scale.split(':')
         if scale[0] == '1':
@@ -20,8 +23,3 @@ class Scalator:
             print(self.big_scale)
             model.scale(float(self.big_scale))
             model.write_text_stl(str(self.dlg.lineEdit.text()).strip('.stl')+ '_' + str(self.big_scale) + '.stl')
-        #model.scale(scale)
-        #model.write_text_stl(str(self.dlg.lineEdit.text())+str(scale^(-1)))   # --- miejsce zapisu
-
-    def kuzwar(self):
-        return print('kukurydza')

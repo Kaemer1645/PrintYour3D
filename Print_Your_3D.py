@@ -43,7 +43,7 @@ from .resources import *
 # Import the code for the dialog
 from .Print_Your_3D_dialog import PrintYour3DDialog
 
-#create object
+#import from main_code
 from .create_model.pySTL import scaleSTL, pySTL
 from .create_model import create_model
 
@@ -214,36 +214,34 @@ class PrintYour3D:
         if self.first_start == True:
             self.first_start = False
             self.dlg = PrintYour3DDialog()
-            self.dlg.pushButton_2.clicked.connect(self.select_output_file)
+
+            #create buttons
             self.dlg.pushButton.clicked.connect(self.pixels)
             self.dlg.pushButton.clicked.connect(self.delaunay)
             self.dlg.pushButton.clicked.connect(self.graph3d)
             self.dlg.pushButton.clicked.connect(self.stretching)
+            self.dlg.pushButton_2.clicked.connect(self.select_output_file)
+            self.dlg.pushButton_3.clicked.connect(self.scale)
             self.dlg.pushButton_4.clicked.connect(self.pixels)
             self.dlg.pushButton_4.clicked.connect(self.delaunay)
             self.dlg.pushButton_4.clicked.connect(self.loading)
             self.dlg.pushButton_4.clicked.connect(self.saver)
             self.dlg.pushButton_5.clicked.connect(self.shape)
-            self.dlg.pushButton_3.clicked.connect(self.scale)
+
         # Fetch the currently loaded layers
         self.layers = QgsProject.instance().layerTreeRoot().children()
-
         #create object of class Create_model
         self.creator = create_model.Create_model(dlg=self.dlg, current_layer=self.layers)
-
         # Clear the contents of the comboBox from previous runs
         self.dlg.comboBox.clear()
         # Populate the comboBox with names of all the loaded layers
         self.dlg.comboBox.addItems([layer.name() for layer in self.layers])
         self.dlg.comboBox_2.clear()
         self.dlg.comboBox_2.addItems([layer.name() for layer in self.layers])
-
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
         result = self.dlg.exec_()
-
-
 
         if result:
             self.iface.messageBar().pushMessage(
@@ -252,6 +250,8 @@ class PrintYour3D:
             # substitute with your code.
             pass
 
+    #methods to create buttons
+    #import from main code inside create_model.py
 
     def pixels(self):
         self.creator.iterator()
@@ -266,12 +266,10 @@ class PrintYour3D:
     def shape(self):
         self.creator.shape(self.plugin_dir)
     def loading(self):
-        load = create_model.Loading_bar()
-        load.loading()
+        self.creator.loading()
     def scale(self):
         set_scale = scaleSTL.Scalator(dlg = self.dlg)
         set_scale.scaleSTL()
-        #scaleSTL.kuzwar()
     def scale_print(self):
         print(self.dlg.comboBox_4.currentText())
 

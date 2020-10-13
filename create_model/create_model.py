@@ -1,15 +1,20 @@
-#import
+#import from main libraries
 import numpy as np
-from .stl import mesh
-from scipy.spatial import Delaunay
 import os
 import processing
 
+#import delaunay algorithm
+from scipy.spatial import Delaunay
 
+#import from numpy-stl library
+from .stl import mesh
+
+#import from qgis library
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QProgressBar, QProgressDialog
 from qgis.PyQt.QtCore import QTimer
 from qgis.core import QgsProject
+
 #import matplotlib to create graph
 import matplotlib.pyplot as plt
 
@@ -25,8 +30,8 @@ class Create_model:
 
         self.layers = current_layer
         self.bar = QProgressBar()
-
         self.dlg = dlg
+
         self.list = []
         self.list_of_all=[]
         self.border = []
@@ -85,7 +90,6 @@ class Create_model:
             if pixelo[1]==j:
                 colrow.append(rowcol)
                 rowcol=[]
-        self.border=[]
         for pixel in self.list_of_all:
             if pixel[4] !=-3.4028234663852886e+38:
                 if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
@@ -260,9 +264,6 @@ class Create_model:
         iface.addRasterLayer(os.path.join(shape_dir, 'merged.tif'), "Raster_With_Shape")
 
 
-
-class Loading_bar:
-
     def loading(self):
         self.dialog = QProgressDialog()
         self.dialog.setWindowTitle("Loading")
@@ -273,7 +274,7 @@ class Loading_bar:
         self.dialog.setMinimumWidth(300)
         self.dialog.show()
         self.timer = QTimer()
-        self.timer.timeout.connect(Create_model.saver)
+        self.timer.timeout.connect(self.saver)
         self.timer.start(1000)
 
 
