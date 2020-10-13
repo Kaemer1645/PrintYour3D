@@ -59,6 +59,7 @@ from .create_model import create_model
 class PrintYour3D:
     """QGIS Plugin Implementation."""
     def __init__(self, iface):
+        self.stopped = False
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -208,7 +209,7 @@ class PrintYour3D:
 
     def run(self):
         """Run method that performs all the real work"""
-
+        self.stopped = False
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
@@ -217,9 +218,9 @@ class PrintYour3D:
 
             #create buttons
             self.dlg.pushButton.clicked.connect(self.pixels)
+            self.dlg.pushButton.clicked.connect(self.stretching)
             self.dlg.pushButton.clicked.connect(self.delaunay)
             self.dlg.pushButton.clicked.connect(self.graph3d)
-            self.dlg.pushButton.clicked.connect(self.stretching)
             self.dlg.pushButton_2.clicked.connect(self.select_output_file)
             self.dlg.pushButton_3.clicked.connect(self.scale)
             self.dlg.pushButton_4.clicked.connect(self.pixels)
@@ -258,7 +259,10 @@ class PrintYour3D:
     def graph3d(self):
         self.creator.create_graph()
     def stretching(self):
-        self.creator.stretching()
+        if self.stopped == False:
+            self.creator.stretching()
+            self.stopped = True
+        return self.stopped
     def delaunay(self):
         self.creator.delaunay()
     def saver(self):

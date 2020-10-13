@@ -17,7 +17,8 @@ from qgis.core import QgsProject
 
 #import matplotlib to create graph
 import matplotlib.pyplot as plt
-
+from mpl_toolkits.mplot3d import Axes3D
+import matplotlib.tri as mtri
 
 
 
@@ -169,13 +170,13 @@ class Create_model:
         plt.show()
 
     def stretching(self):
-            for cords in self.list:
-                if cords[2] > self.minimal:
-                    height_stretched = cords[2] - float(self.dlg.doubleSpinBox.value())
-                    height_stretched = height_stretched * self.dlg.spinBox_2.value()
-                    height_stretched += float(self.dlg.doubleSpinBox.value())
-                    cords[2] = height_stretched
-            return self.list
+        for cords in self.list:
+            if cords[2] > self.minimal:
+                height_stretched = cords[2] - float(self.dlg.doubleSpinBox.value())
+                height_stretched = height_stretched * self.dlg.spinBox_2.value()
+                height_stretched += float(self.dlg.doubleSpinBox.value())
+                cords[2] = height_stretched
+        return self.list
 
     def shape(self, direction):
         self.plugin_dir = direction
