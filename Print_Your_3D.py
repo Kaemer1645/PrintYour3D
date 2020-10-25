@@ -217,28 +217,29 @@ class PrintYour3D:
             self.dlg = PrintYour3DDialog()
 
             #create buttons
-            self.dlg.pushButton.clicked.connect(self.pixels)
-            self.dlg.pushButton.clicked.connect(self.stretching)
-            self.dlg.pushButton.clicked.connect(self.delaunay)
-            self.dlg.pushButton.clicked.connect(self.graph3d)
-            self.dlg.pushButton_2.clicked.connect(self.select_output_file)
-            self.dlg.pushButton_3.clicked.connect(self.scale)
-            self.dlg.pushButton_4.clicked.connect(self.pixels)
-            self.dlg.pushButton_4.clicked.connect(self.delaunay)
-            self.dlg.pushButton_4.clicked.connect(self.loading)
-            self.dlg.pushButton_4.clicked.connect(self.saver)
-            self.dlg.pushButton_5.clicked.connect(self.shape)
+            self.dlg.btnGraph.clicked.connect(self.pixels)
+            self.dlg.btnGraph.clicked.connect(self.stretching)
+            self.dlg.btnGraph.clicked.connect(self.delaunay)
+            self.dlg.btnGraph.clicked.connect(self.graph3d)
+            self.dlg.btnSelect.clicked.connect(self.select_output_file)
+            self.dlg.btnScale.clicked.connect(self.scale)
+            self.dlg.btnSave.clicked.connect(self.pixels)
+            self.dlg.btnSave.clicked.connect(self.delaunay)
+            self.dlg.btnSave.clicked.connect(self.loading)
+            self.dlg.btnSave.clicked.connect(self.saver)
+            self.dlg.btnShape.clicked.connect(self.shape)
 
         # Fetch the currently loaded layers
-        self.layers = QgsProject.instance().layerTreeRoot().children()
+        #self.layers = QgsProject.instance().layerTreeRoot().children()
+        self.layers = self.dlg.cmbSelectLayer.currentLayer()
         #create object of class Create_model
         self.creator = create_model.Create_model(dlg=self.dlg, current_layer=self.layers)
         # Clear the contents of the comboBox from previous runs
-        self.dlg.comboBox.clear()
+        #self.dlg.cmbSelectLayer.clear()
         # Populate the comboBox with names of all the loaded layers
-        self.dlg.comboBox.addItems([layer.name() for layer in self.layers])
-        self.dlg.comboBox_2.clear()
-        self.dlg.comboBox_2.addItems([layer.name() for layer in self.layers])
+        #self.dlg.cmbSelectLayer.addItems([layer.name() for layer in self.layers])
+        #self.dlg.cmbSelectShape.clear()
+        #self.dlg.cmbSelectShape.addItems([layer.name() for layer in self.layers])
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop

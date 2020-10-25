@@ -45,9 +45,9 @@ class Create_model:
 
     def iterator(self):
 
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        self.layer = self.layers[selectedLayerIndex].layer()
-
+        #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
+        #self.layer = self.layers[selectedLayerIndex].layer()
+        self.layer = self.dlg.cmbSelectLayer.currentLayer()
         #get the extent of layer
         provider = self.layer.dataProvider()
         extent = provider.extent()
@@ -70,7 +70,7 @@ class Create_model:
                 k += 1
                 if block.value(i, j)  == -3.4028234663852886e+38: #, block.value(zewL,j) , block.value(zewP,j)]
                     self.list_of_all.append([i,j,x,y,block.value(i,j)])
-                elif block.value(i,j)>=self.dlg.doubleSpinBox.value():
+                elif block.value(i,j)>=self.dlg.dsbDatum.value():
                     self.list.append([x, y, block.value(i, j)])
                     self.list_of_all.append([i,j,x,y,block.value(i,j)])
                 else:
@@ -94,13 +94,13 @@ class Create_model:
         for pixel in self.list_of_all:
             if pixel[4] !=-3.4028234663852886e+38:
                 if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
-                    pixel[4] = float(self.dlg.doubleSpinBox.value())
+                    pixel[4] = float(self.dlg.dsbDatum.value())
                     self.border.append([pixel[2],pixel[3],pixel[4]])
                     self.list = self.border + self.list
                 else:
                     wii=pixel[0]
                     kol=pixel[1]
-                    pixel[4]=float(self.dlg.doubleSpinBox.value())
+                    pixel[4]=float(self.dlg.dsbDatum.value())
                     condition1 = colrow[wii-1][kol][4]
                     condition2 = colrow[wii][kol-1][4]
                     condition3 = colrow[wii+1][kol][4]
@@ -172,23 +172,24 @@ class Create_model:
     def stretching(self):
         for cords in self.list:
             if cords[2] > self.minimal:
-                height_stretched = cords[2] - float(self.dlg.doubleSpinBox.value())
-                height_stretched = height_stretched * self.dlg.spinBox_2.value()
-                height_stretched += float(self.dlg.doubleSpinBox.value())
+                height_stretched = cords[2] - float(self.dlg.dsbDatum.value())
+                height_stretched = height_stretched * self.dlg.sbStretch.value()
+                height_stretched += float(self.dlg.dsbDatum.value())
                 cords[2] = height_stretched
         return self.list
 
     def shape(self, direction):
         self.plugin_dir = direction
-        buffer_distance = self.dlg.doubleSpinBox_3.value()
-        output_data_type = self.dlg.spinBox_7.value()
-        output_raster_size_unit = self.dlg.spinBox_4.value()
-        no_data_value = self.dlg.spinBox_6.value()
-        layer2 = self.layers[self.dlg.comboBox_2.currentIndex()].layer()
+        buffer_distance = self.dlg.dsbBuffer.value()
+        output_data_type = self.dlg.sbOutputData.value()
+        output_raster_size_unit = self.dlg.sbOutputSizeUnit.value()
+        no_data_value = self.dlg.sbNoData.value()
+        layer2 = self.layers[self.dlg.cmbSelectShape.currentIndex()].layer()
         shape_dir = os.path.join(self.plugin_dir, 'TRASH')
 
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        layer_ext_cor = self.layers[selectedLayerIndex].layer()
+        #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
+        #layer_ext_cor = self.layers[selectedLayerIndex].layer()
+        layer_ext_cor = self.dlg.cmbSelectLayer.currentLayer()
         provider = layer_ext_cor.dataProvider()
         extent = provider.extent()
         xmin = extent.xMinimum()
@@ -214,13 +215,13 @@ class Create_model:
 
         processing.run("qgis:generatepointspixelcentroidsinsidepolygons",
                        {'INPUT_RASTER': self.layers[
-                           self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+                           self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
                         'INPUT_VECTOR': os.path.join(shape_dir, 'shape_dissolve.shp'),
                         'OUTPUT': os.path.join(shape_dir, 'shape_points.shp')})
 
         processing.run("native:setzfromraster",
                        {'INPUT': os.path.join(shape_dir, 'shape_points.shp'),
-                        'RASTER': self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+                        'RASTER': self.layers[self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
                         'BAND': 1, 'NODATA': 0, 'SCALE': 1,
                         'OUTPUT': os.path.join(shape_dir, 'shape_drape.shp')})
 
@@ -258,7 +259,7 @@ class Create_model:
         QgsProject.instance().removeMapLayers([layer3.id()])
 
         processing.run("gdal:merge", {
-            'INPUT': [self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+            'INPUT': [self.layers[self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
                       os.path.join(shape_dir, 'shape_to_raster.tif')],
             'PCT': False, 'SEPARATE': False, 'NODATA_INPUT': None, 'NODATA_OUTPUT': None, 'OPTIONS': '', 'DATA_TYPE': 5,
             'OUTPUT': os.path.join(shape_dir, 'merged.tif')})

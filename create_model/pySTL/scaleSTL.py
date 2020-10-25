@@ -11,7 +11,7 @@ class Scalator:
         self.big_scale = None
     def scaleSTL(self):
         model = STLmodel(str(self.dlg.lineEdit.text()))
-        scale = str(self.dlg.comboBox_4.currentText())
+        scale = str(self.dlg.cmbScale.currentText())
         scale = scale.split(':')
         if scale[0] == '1':
             self.small_scale = int(scale[1])
