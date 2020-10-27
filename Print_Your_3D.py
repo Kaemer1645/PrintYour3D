@@ -33,7 +33,7 @@ import time
 #import from PyQt
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication,QVariant
 from qgis.PyQt.QtGui import QIcon
-from qgis.PyQt.QtWidgets import QAction, QDialog, QFileDialog, QApplication
+from qgis.PyQt.QtWidgets import QAction, QDialog, QApplication
 from qgis.core import QgsProject, Qgis, QgsGeometry, QgsFeature, QgsVectorLayer, QgsField,QgsExpression,QgsExpressionContext,QgsExpressionContextUtils, QgsRasterLayer, QgsVectorFileWriter
 from qgis.utils import iface, plugins
 
@@ -43,9 +43,7 @@ from .resources import *
 # Import the code for the dialog
 from .Print_Your_3D_dialog import PrintYour3DDialog
 
-#import from main_code
-from .create_model.pySTL import scaleSTL, pySTL
-from .create_model import create_model
+
 
 
 
@@ -59,7 +57,6 @@ from .create_model import create_model
 class PrintYour3D:
     """QGIS Plugin Implementation."""
     def __init__(self, iface):
-        self.stopped = False
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -202,46 +199,20 @@ class PrintYour3D:
                 action)
             self.iface.removeToolBarIcon(action)
 
-    def select_output_file(self):
-        filename, _filter = QFileDialog.getSaveFileName(
-            self.dlg, "Select   output file ", "", '*.stl')
-        self.dlg.lineEdit.setText(filename)
-
     def run(self):
         """Run method that performs all the real work"""
         self.stopped = False
+
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
             self.dlg = PrintYour3DDialog()
 
-            #create buttons
-            self.dlg.btnGraph.clicked.connect(self.pixels)
-            self.dlg.btnGraph.clicked.connect(self.stretching)
-            self.dlg.btnGraph.clicked.connect(self.delaunay)
-            self.dlg.btnGraph.clicked.connect(self.graph3d)
-            self.dlg.btnSelect.clicked.connect(self.select_output_file)
-            self.dlg.btnScale.clicked.connect(self.scale)
-            self.dlg.btnSave.clicked.connect(self.pixels)
-            self.dlg.btnSave.clicked.connect(self.delaunay)
-            self.dlg.btnSave.clicked.connect(self.loading)
-            self.dlg.btnSave.clicked.connect(self.saver)
-            self.dlg.btnShape.clicked.connect(self.shape)
 
-        # Fetch the currently loaded layers
-        #self.layers = QgsProject.instance().layerTreeRoot().children()
-        self.layers = self.dlg.cmbSelectLayer.currentLayer()
-        #create object of class Create_model
-        self.creator = create_model.Create_model(dlg=self.dlg, current_layer=self.layers)
-        # Clear the contents of the comboBox from previous runs
-        #self.dlg.cmbSelectLayer.clear()
-        # Populate the comboBox with names of all the loaded layers
-        #self.dlg.cmbSelectLayer.addItems([layer.name() for layer in self.layers])
-        #self.dlg.cmbSelectShape.clear()
-        #self.dlg.cmbSelectShape.addItems([layer.name() for layer in self.layers])
         # show the dialog
-        self.dlg.show()
+            self.dlg.show()
+            self.dlg.trash_remover()
         # Run the dialog event loop
         result = self.dlg.exec_()
 
@@ -252,31 +223,8 @@ class PrintYour3D:
             # substitute with your code.
             pass
 
-    #methods to create buttons
-    #import from main code inside create_model.py
 
-    def pixels(self):
-        self.creator.iterator()
-    def graph3d(self):
-        self.creator.create_graph()
-    def stretching(self):
-        if self.stopped == False:
-            self.creator.stretching()
-            self.stopped = True
-        return self.stopped
-    def delaunay(self):
-        self.creator.delaunay()
-    def saver(self):
-        self.creator.saver()
-    def shape(self):
-        self.creator.shape(self.plugin_dir)
-    def loading(self):
-        self.creator.loading()
-    def scale(self):
-        set_scale = scaleSTL.Scalator(dlg = self.dlg)
-        set_scale.scaleSTL()
-    def scale_print(self):
-        print(self.dlg.comboBox_4.currentText())
+
 
 
 

@@ -13,7 +13,7 @@ from .stl import mesh
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QProgressBar, QProgressDialog
 from qgis.PyQt.QtCore import QTimer
-from qgis.core import QgsProject
+from qgis.core import QgsProject, QgsMapLayer
 
 #import matplotlib to create graph
 import matplotlib.pyplot as plt
@@ -45,9 +45,8 @@ class Create_model:
 
     def iterator(self):
 
-        #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
-        #self.layer = self.layers[selectedLayerIndex].layer()
         self.layer = self.dlg.cmbSelectLayer.currentLayer()
+
         #get the extent of layer
         provider = self.layer.dataProvider()
         extent = provider.extent()
@@ -184,7 +183,7 @@ class Create_model:
         output_data_type = self.dlg.sbOutputData.value()
         output_raster_size_unit = self.dlg.sbOutputSizeUnit.value()
         no_data_value = self.dlg.sbNoData.value()
-        layer2 = self.layers[self.dlg.cmbSelectShape.currentIndex()].layer()
+        layer2 = self.dlg.cmbSelectShape.currentLayer()
         shape_dir = os.path.join(self.plugin_dir, 'TRASH')
 
         #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
@@ -214,14 +213,13 @@ class Create_model:
             'OUTPUT': os.path.join(shape_dir, 'shape_dissolve.shp')})
 
         processing.run("qgis:generatepointspixelcentroidsinsidepolygons",
-                       {'INPUT_RASTER': self.layers[
-                           self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
+                       {'INPUT_RASTER': self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                         'INPUT_VECTOR': os.path.join(shape_dir, 'shape_dissolve.shp'),
                         'OUTPUT': os.path.join(shape_dir, 'shape_points.shp')})
 
         processing.run("native:setzfromraster",
                        {'INPUT': os.path.join(shape_dir, 'shape_points.shp'),
-                        'RASTER': self.layers[self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
+                        'RASTER': self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                         'BAND': 1, 'NODATA': 0, 'SCALE': 1,
                         'OUTPUT': os.path.join(shape_dir, 'shape_drape.shp')})
 
@@ -259,13 +257,15 @@ class Create_model:
         QgsProject.instance().removeMapLayers([layer3.id()])
 
         processing.run("gdal:merge", {
-            'INPUT': [self.layers[self.dlg.cmbSelectLayer.currentIndex()].layer().dataProvider().dataSourceUri(),
+            'INPUT': [self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                       os.path.join(shape_dir, 'shape_to_raster.tif')],
             'PCT': False, 'SEPARATE': False, 'NODATA_INPUT': None, 'NODATA_OUTPUT': None, 'OPTIONS': '', 'DATA_TYPE': 5,
             'OUTPUT': os.path.join(shape_dir, 'merged.tif')})
         iface.addRasterLayer(os.path.join(shape_dir, 'merged.tif'), "Raster_With_Shape")
 
-
+        shape_to_raster = QgsProject.instance().mapLayersByName('Shape_to_Raster')
+        #print(shape_to_raster[0].id())
+        QgsProject.instance().removeMapLayers([shape_to_raster[0].id()])
     def loading(self):
         self.dialog = QProgressDialog()
         self.dialog.setWindowTitle("Loading")
