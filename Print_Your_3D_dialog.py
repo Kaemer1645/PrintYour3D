@@ -110,7 +110,6 @@ class PrintYour3DDialog(QtWidgets.QDialog, FORM_CLASS):
         trash_path = self.plugin_dir+'/TRASH'
         for file in os.listdir(trash_path):
             if file == 'merged.tif': pass
-            if file == 'merged.tif.aux.xml': pass
             else: os.remove(trash_path+'\\' +f'{file}')
         #remove = [print('zostaw') if file == 'merged.tif' else os.remove(trash_path+'\\' +f'{file}') for file in os.listdir(trash_path)]
         #return remove
