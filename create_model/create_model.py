@@ -13,7 +13,7 @@ from .stl import mesh
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QProgressBar, QProgressDialog
 from qgis.PyQt.QtCore import QTimer
-from qgis.core import QgsProject
+from qgis.core import QgsProject, QgsMapLayer
 
 #import matplotlib to create graph
 import matplotlib.pyplot as plt
@@ -43,10 +43,11 @@ class Create_model:
         self.faces = []
         self.points = []
 
+        self.NoData = -3.4028234663852886e+38
+
     def iterator(self):
 
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        self.layer = self.layers[selectedLayerIndex].layer()
+        self.layer = self.dlg.cmbSelectLayer.currentLayer()
 
         #get the extent of layer
         provider = self.layer.dataProvider()
@@ -68,13 +69,13 @@ class Create_model:
                 x = xinit + j * xsize
                 y = yinit
                 k += 1
-                if block.value(i, j)  == -3.4028234663852886e+38: #, block.value(zewL,j) , block.value(zewP,j)]
+                if block.value(i, j)  == self.NoData: #, block.value(zewL,j) , block.value(zewP,j)]
                     self.list_of_all.append([i,j,x,y,block.value(i,j)])
-                elif block.value(i,j)>=self.dlg.doubleSpinBox.value():
+                elif block.value(i,j)>=self.dlg.dsbDatum.value():
                     self.list.append([x, y, block.value(i, j)])
                     self.list_of_all.append([i,j,x,y,block.value(i,j)])
                 else:
-                    self.list_of_all.append([i,j,x,y,-3.4028234663852886e+38])
+                    self.list_of_all.append([i,j,x,y,self.NoData])
             xinit = xmin + xsize / 2
             yinit -= ysize
 
@@ -92,22 +93,22 @@ class Create_model:
                 colrow.append(rowcol)
                 rowcol=[]
         for pixel in self.list_of_all:
-            if pixel[4] !=-3.4028234663852886e+38:
+            if pixel[4] != self.NoData:
                 if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
-                    pixel[4] = float(self.dlg.doubleSpinBox.value())
+                    pixel[4] = float(self.dlg.dsbDatum.value())
                     self.border.append([pixel[2],pixel[3],pixel[4]])
                     self.list = self.border + self.list
                 else:
                     wii=pixel[0]
                     kol=pixel[1]
-                    pixel[4]=float(self.dlg.doubleSpinBox.value())
+                    pixel[4]=float(self.dlg.dsbDatum.value())
                     condition1 = colrow[wii-1][kol][4]
                     condition2 = colrow[wii][kol-1][4]
                     condition3 = colrow[wii+1][kol][4]
                     condition4 = colrow[wii][kol+1][4]
 
-                    if condition1> -3.4028234663852886e+38 or condition2> -3.4028234663852886e+38 or condition3> -3.4028234663852886e+38 or condition4 > -3.4028234663852886e+38:
-                        if condition1 == -3.4028234663852886e+38or condition2== -3.4028234663852886e+38 or condition3== -3.4028234663852886e+38 or condition4 == -3.4028234663852886e+38:
+                    if condition1> self.NoData or condition2> self.NoData or condition3> self.NoData or condition4 > self.NoData:
+                        if condition1 == self.NoData or condition2== self.NoData or condition3== self.NoData or condition4 == self.NoData:
                             self.border.append([pixel[2],pixel[3],pixel[4]])
                             self.list=self.border+self.list
 
@@ -172,23 +173,26 @@ class Create_model:
     def stretching(self):
         for cords in self.list:
             if cords[2] > self.minimal:
-                height_stretched = cords[2] - float(self.dlg.doubleSpinBox.value())
-                height_stretched = height_stretched * self.dlg.spinBox_2.value()
-                height_stretched += float(self.dlg.doubleSpinBox.value())
+                height_stretched = cords[2] - float(self.dlg.dsbDatum.value())
+                height_stretched = height_stretched * self.dlg.sbStretch.value()
+                height_stretched += float(self.dlg.dsbDatum.value())
                 cords[2] = height_stretched
         return self.list
 
     def shape(self, direction):
         self.plugin_dir = direction
-        buffer_distance = self.dlg.doubleSpinBox_3.value()
-        output_data_type = self.dlg.spinBox_7.value()
-        output_raster_size_unit = self.dlg.spinBox_4.value()
-        no_data_value = self.dlg.spinBox_6.value()
-        layer2 = self.layers[self.dlg.comboBox_2.currentIndex()].layer()
+        buffer_distance = self.dlg.dsbBuffer.value()
+        output_data_type = self.dlg.sbOutputData.value()
+        #output_raster_size_unit = self.dlg.sbOutputSizeUnit.value()
+        output_raster_size_unit = 0
+        #no_data_value = self.dlg.sbNoData.value()
+        no_data_value = 0
+        layer2 = self.dlg.cmbSelectShape.currentLayer()
         shape_dir = os.path.join(self.plugin_dir, 'TRASH')
 
-        selectedLayerIndex = self.dlg.comboBox.currentIndex()
-        layer_ext_cor = self.layers[selectedLayerIndex].layer()
+        #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
+        #layer_ext_cor = self.layers[selectedLayerIndex].layer()
+        layer_ext_cor = self.dlg.cmbSelectLayer.currentLayer()
         provider = layer_ext_cor.dataProvider()
         extent = provider.extent()
         xmin = extent.xMinimum()
@@ -199,6 +203,7 @@ class Create_model:
         coords = "%f,%f,%f,%f " % (xmin, xmax, ymin, ymax) + '[' + str(cord_sys) + ']'
         rows = layer_ext_cor.height()
         cols = layer_ext_cor.width()
+        set_shp_height = self.dlg.sbHeight.value()
 
         processing.run("native:buffer",
                        {'INPUT': layer2, 'DISTANCE': buffer_distance, 'SEGMENTS': 5, 'END_CAP_STYLE': 0,
@@ -213,14 +218,13 @@ class Create_model:
             'OUTPUT': os.path.join(shape_dir, 'shape_dissolve.shp')})
 
         processing.run("qgis:generatepointspixelcentroidsinsidepolygons",
-                       {'INPUT_RASTER': self.layers[
-                           self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+                       {'INPUT_RASTER': self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                         'INPUT_VECTOR': os.path.join(shape_dir, 'shape_dissolve.shp'),
                         'OUTPUT': os.path.join(shape_dir, 'shape_points.shp')})
 
         processing.run("native:setzfromraster",
                        {'INPUT': os.path.join(shape_dir, 'shape_points.shp'),
-                        'RASTER': self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+                        'RASTER': self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                         'BAND': 1, 'NODATA': 0, 'SCALE': 1,
                         'OUTPUT': os.path.join(shape_dir, 'shape_drape.shp')})
 
@@ -245,25 +249,32 @@ class Create_model:
         processing.run("qgis:fieldcalculator", {
             'INPUT': os.path.join(shape_dir, 'shape_drape.shp'),
             'FIELD_NAME': field_name, 'FIELD_TYPE': 0, 'FIELD_LENGTH': 10, 'FIELD_PRECISION': 3, 'NEW_FIELD': True,
-            'FORMULA': 'z($geometry)+2', 'OUTPUT': os.path.join(shape_dir, 'shape_drape_c.shp')})
+            'FORMULA': 'z($geometry)+' + str(set_shp_height), 'OUTPUT': os.path.join(shape_dir, 'shape_drape_c.shp')})
+
+
+######################################################################################
 
         processing.run("gdal:rasterize", {
             'INPUT': os.path.join(shape_dir, 'shape_drape_c.shp'),
             'FIELD': field_name, 'BURN': 0, 'UNITS': output_raster_size_unit, 'WIDTH': cols, 'HEIGHT': rows,
-            # width heighy ustawic automatycznie do glownej rozdzielczosci
             'EXTENT': coords, 'NODATA': no_data_value, 'OPTIONS': '', 'DATA_TYPE': output_data_type,
             'INIT': None, 'INVERT': False,
             'OUTPUT': os.path.join(shape_dir, 'shape_to_raster.tif')})
         iface.addRasterLayer(os.path.join(shape_dir, 'shape_to_raster.tif'), "Shape_to_Raster")
         QgsProject.instance().removeMapLayers([layer3.id()])
 
+######################################################################################
+
         processing.run("gdal:merge", {
-            'INPUT': [self.layers[self.dlg.comboBox.currentIndex()].layer().dataProvider().dataSourceUri(),
+            'INPUT': [self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                       os.path.join(shape_dir, 'shape_to_raster.tif')],
             'PCT': False, 'SEPARATE': False, 'NODATA_INPUT': None, 'NODATA_OUTPUT': None, 'OPTIONS': '', 'DATA_TYPE': 5,
             'OUTPUT': os.path.join(shape_dir, 'merged.tif')})
         iface.addRasterLayer(os.path.join(shape_dir, 'merged.tif'), "Raster_With_Shape")
 
+        shape_to_raster = QgsProject.instance().mapLayersByName('Shape_to_Raster')
+        #print(shape_to_raster[0].id())
+        QgsProject.instance().removeMapLayers([shape_to_raster[0].id()])
 
     def loading(self):
         self.dialog = QProgressDialog()
