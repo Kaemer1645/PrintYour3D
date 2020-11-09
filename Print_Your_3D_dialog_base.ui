@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>561</width>
-    <height>656</height>
+    <height>663</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -277,10 +277,28 @@
      <property name="enabled">
       <bool>true</bool>
      </property>
+     <property name="minimumSize">
+      <size>
+       <width>539</width>
+       <height>355</height>
+      </size>
+     </property>
+     <property name="autoFillBackground">
+      <bool>false</bool>
+     </property>
      <property name="title">
       <string>ShapeFile To Raster</string>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
+     <property name="collapsed">
+      <bool>true</bool>
+     </property>
+     <property name="scrollOnExpand">
+      <bool>false</bool>
+     </property>
+     <property name="saveCollapsedState">
+      <bool>false</bool>
+     </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_7">
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="toolTip">
@@ -392,21 +410,24 @@
             </spacer>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_9">
+            <layout class="QHBoxLayout" name="horizontalLayout_12">
              <item>
-              <widget class="QLabel" name="label_10">
+              <widget class="QLabel" name="label_13">
                <property name="text">
-                <string>Output data type</string>
+                <string>Set ShapeFile height</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbOutputData">
+              <widget class="QSpinBox" name="sbHeight">
+               <property name="minimum">
+                <number>-20000</number>
+               </property>
                <property name="maximum">
-                <number>10</number>
+                <number>20000</number>
                </property>
                <property name="value">
-                <number>5</number>
+                <number>2</number>
                </property>
               </widget>
              </item>
@@ -426,52 +447,24 @@
             </spacer>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <layout class="QHBoxLayout" name="horizontalLayout_9">
              <item>
-              <widget class="QLabel" name="label_11">
+              <widget class="QLabel" name="label_10">
                <property name="text">
-                <string>Output raster size units</string>
+                <string>Output data type</string>
                </property>
               </widget>
              </item>
              <item>
-              <widget class="QSpinBox" name="sbOutputSizeUnit">
-               <property name="maximum">
-                <number>1</number>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
-            <spacer name="verticalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_12">
-             <item>
-              <widget class="QLabel" name="label_13">
-               <property name="text">
-                <string>NoData value</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSpinBox" name="sbNoData">
-               <property name="minimum">
-                <number>-20000</number>
+              <widget class="QSpinBox" name="sbOutputData">
+               <property name="toolTip">
+                <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Possible output data type:&lt;/p&gt;&lt;p&gt;0 - Byte&lt;/p&gt;&lt;p&gt;1 - Int16&lt;/p&gt;&lt;p&gt;2 - UInt16&lt;/p&gt;&lt;p&gt;3 - UInt32&lt;/p&gt;&lt;p&gt;4 - Int32&lt;/p&gt;&lt;p&gt;5 - Float32&lt;/p&gt;&lt;p&gt;6 - Float64&lt;/p&gt;&lt;p&gt;7 - CInt16&lt;/p&gt;&lt;p&gt;8 - CInt32&lt;/p&gt;&lt;p&gt;9 - CFloat32&lt;/p&gt;&lt;p&gt;10 - CFloat64&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
                </property>
                <property name="maximum">
-                <number>20000</number>
+                <number>10</number>
+               </property>
+               <property name="value">
+                <number>5</number>
                </property>
               </widget>
              </item>
@@ -484,6 +477,19 @@
       </item>
      </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
    </item>
    <item>
     <widget class="QDialogButtonBox" name="button_box">
