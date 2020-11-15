@@ -20,14 +20,13 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.tri as mtri
 
-
-
-
 #that class have got entire algorithm to create a model
 
 class Create_model:
 
     def __init__(self, dlg, current_layer):
+        """This constructor need Qt Dialog  class as dlg and need current layer to execute the algorithm
+        in current_layer parameter"""
 
         self.layers = current_layer
         self.bar = QProgressBar()
@@ -46,6 +45,7 @@ class Create_model:
         self.NoData = -3.4028234663852886e+38
 
     def iterator(self):
+        """Main algorithm to iterate through all the pixels and also to create boundaries"""
 
         self.layer = self.dlg.cmbSelectLayer.currentLayer()
 
@@ -69,7 +69,7 @@ class Create_model:
                 x = xinit + j * xsize
                 y = yinit
                 k += 1
-                if block.value(i, j)  == self.NoData: #, block.value(zewL,j) , block.value(zewP,j)]
+                if block.value(i, j)  == self.NoData:
                     self.list_of_all.append([i,j,x,y,block.value(i,j)])
                 elif block.value(i,j)>=self.dlg.dsbDatum.value():
                     self.list.append([x, y, block.value(i, j)])
@@ -84,6 +84,9 @@ class Create_model:
         for searching in self.list:
                 height.append(searching[2])
         self.minimal=min(height)
+
+
+        #iterate the raster to get the boundaries
 
         colrow=[]
         rowcol=[]
@@ -115,7 +118,11 @@ class Create_model:
         return self.list, self.minimal
 
 
+
     def delaunay(self):
+        """This is Delaunay algorithm from Scipy lib
+        This is needed to create vertices and faces which will be going to executed in creating STL model"""
+
 
         for x in self.list:
             x_cord = x[0]
@@ -128,8 +135,6 @@ class Create_model:
         self.y = np.array(self.Y)
         self.z = np.array(self.Z)
 
-        # Delaunay algorithm
-
         self.tri = Delaunay(np.array([self.x, self.y]).T, qhull_options=None)
         for vert in self.tri.simplices:
             self.faces.append([vert[0], vert[1], vert[2]])
@@ -139,12 +144,14 @@ class Create_model:
         return self.faces, self.points, self.x, self.y, self.z, self.tri
 
     def saver(self):
-        # Define the vertices of the cube
+        """ Create STL model """
+
+        # Define the vertices
         vertices = np.array(self.points)
-        # Define the triangles composing the cube
+        # Define the triangles
         facess = np.array(self.faces)
         # Create the mesh
-        self.cube = mesh.Mesh(np.zeros(facess.shape[0], dtype=mesh.Mesh.dtype))
+        self.figure = mesh.Mesh(np.zeros(facess.shape[0], dtype=mesh.Mesh.dtype))
         all_percentage = len(facess)
         value = self.bar.value()
         for i, f in enumerate(facess):
@@ -154,13 +161,15 @@ class Create_model:
             else:
                 self.timer.stop()
             for j in range(3):
-                self.cube.vectors[i][j] = vertices[f[j], :]
+                self.figure.vectors[i][j] = vertices[f[j], :]
 
         filename=self.dlg.lineEdit.text()
-        self.cube.save(filename)
-        return self.cube
+        self.figure.save(filename)
+        return self.figure
 
     def create_graph(self):
+        """ Visualize model by Matplotlib lib"""
+
         fig = plt.figure()
         ax = fig.add_subplot(1, 1, 1, projection='3d')
         ax.plot_trisurf(self.x, self.y, self.z, triangles=self.tri.simplices, cmap=plt.cm.Spectral)
@@ -171,6 +180,7 @@ class Create_model:
         plt.show()
 
     def stretching(self):
+        """ This method stretching the entire model to the given Datum level"""
         for cords in self.list:
             if cords[2] > self.minimal:
                 height_stretched = cords[2] - float(self.dlg.dsbDatum.value())
@@ -180,18 +190,19 @@ class Create_model:
         return self.list
 
     def shape(self, direction):
+        """ This algorithm convert ShapeFile to the .tif file.
+        To created that process I used a lot of GDAL processing algorithms
+         and this gave me possibility to convert the shape to .tif file,
+         drape them to the correct elevation and merge this new raster to the current main tif """
+
         self.plugin_dir = direction
         buffer_distance = self.dlg.dsbBuffer.value()
         output_data_type = self.dlg.sbOutputData.value()
-        #output_raster_size_unit = self.dlg.sbOutputSizeUnit.value()
         output_raster_size_unit = 0
-        #no_data_value = self.dlg.sbNoData.value()
         no_data_value = 0
         layer2 = self.dlg.cmbSelectShape.currentLayer()
         shape_dir = os.path.join(self.plugin_dir, 'TRASH')
 
-        #selectedLayerIndex = self.dlg.cmbSelectLayer.currentIndex()
-        #layer_ext_cor = self.layers[selectedLayerIndex].layer()
         layer_ext_cor = self.dlg.cmbSelectLayer.currentLayer()
         provider = layer_ext_cor.dataProvider()
         extent = provider.extent()
@@ -232,8 +243,7 @@ class Create_model:
         if not layer3:
             print("Layer failed to load!")
         field_name = "height"
-        # field_index = layer4.fields().indexFromName(field_name)
-        field_namess = [field.name() for field in layer3.fields()]  # jak podac tutaj plik shape_drape
+        field_namess = [field.name() for field in layer3.fields()]
         i = 0
         for l in range(100):
             i += 1
@@ -243,16 +253,12 @@ class Create_model:
                 continue
             else:
                 print('Doesn\'t Exist')
-                # field_name == field_name
                 break
 
         processing.run("qgis:fieldcalculator", {
             'INPUT': os.path.join(shape_dir, 'shape_drape.shp'),
             'FIELD_NAME': field_name, 'FIELD_TYPE': 0, 'FIELD_LENGTH': 10, 'FIELD_PRECISION': 3, 'NEW_FIELD': True,
             'FORMULA': 'z($geometry)+' + str(set_shp_height), 'OUTPUT': os.path.join(shape_dir, 'shape_drape_c.shp')})
-
-
-######################################################################################
 
         processing.run("gdal:rasterize", {
             'INPUT': os.path.join(shape_dir, 'shape_drape_c.shp'),
@@ -263,8 +269,6 @@ class Create_model:
         iface.addRasterLayer(os.path.join(shape_dir, 'shape_to_raster.tif'), "Shape_to_Raster")
         QgsProject.instance().removeMapLayers([layer3.id()])
 
-######################################################################################
-
         processing.run("gdal:merge", {
             'INPUT': [self.dlg.cmbSelectLayer.currentLayer().dataProvider().dataSourceUri(),
                       os.path.join(shape_dir, 'shape_to_raster.tif')],
@@ -273,10 +277,11 @@ class Create_model:
         iface.addRasterLayer(os.path.join(shape_dir, 'merged.tif'), "Raster_With_Shape")
 
         shape_to_raster = QgsProject.instance().mapLayersByName('Shape_to_Raster')
-        #print(shape_to_raster[0].id())
         QgsProject.instance().removeMapLayers([shape_to_raster[0].id()])
 
     def loading(self):
+        """ Loading progress bar """
+
         self.dialog = QProgressDialog()
         self.dialog.setWindowTitle("Loading")
         self.dialog.setLabelText("That's your progress")

@@ -28,8 +28,12 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.core import QgsMapLayerProxyModel
 from qgis.PyQt.QtWidgets import QFileDialog
-#import from main_code
-from .create_model.pySTL import scaleSTL, pySTL
+
+#import from main_code directory
+
+#this is external libraries which i use
+from .create_model.pySTL import scaleSTL #pySTL
+
 from .create_model import create_model
 
 
@@ -57,13 +61,16 @@ class PrintYour3DDialog(QtWidgets.QDialog, FORM_CLASS):
         self.btnGraph.clicked.connect(self.stretching)
         self.btnGraph.clicked.connect(self.delaunay)
         self.btnGraph.clicked.connect(self.graph3d)
-        self.btnSelect.clicked.connect(self.select_output_file)
-        self.btnScale.clicked.connect(self.scale)
+
         self.btnSave.clicked.connect(self.pixels)
         self.btnSave.clicked.connect(self.delaunay)
         self.btnSave.clicked.connect(self.loading)
         self.btnSave.clicked.connect(self.saver)
+
         self.btnShape.clicked.connect(self.shape)
+        self.btnSelect.clicked.connect(self.select_output_file)
+        self.btnScale.clicked.connect(self.scale)
+
         # Fetch the currently loaded layers
         self.layers = self.cmbSelectLayer.currentLayer()
         self.cmbSelectLayer.setFilters(QgsMapLayerProxyModel.RasterLayer)
@@ -73,31 +80,37 @@ class PrintYour3DDialog(QtWidgets.QDialog, FORM_CLASS):
         #create object of class Create_model
         self.creator = create_model.Create_model(dlg=self, current_layer=self.layers)
 
-        #self.trash_remover() # to zrobic zeby wykywalo sie za kazdym razem
-
     # methods to create buttons
     # import from main code inside create_model.py
 
     def pixels(self):
         self.creator.iterator()
+
     def graph3d(self):
         self.creator.create_graph()
+
     def stretching(self):
         if self.stopped == False:
             self.creator.stretching()
             self.stopped = True
         return self.stopped
+
     def delaunay(self):
         self.creator.delaunay()
+
     def saver(self):
         self.creator.saver()
+
     def shape(self):
         self.creator.shape(self.plugin_dir)
+
     def loading(self):
         self.creator.loading()
+
     def scale(self):
-        set_scale = scaleSTL.Scalator(scale_text=self.lineEdit, cmbScale=self.cmbScale) #usunac dlg bo juz jest w dialogu
+        set_scale = scaleSTL.Scalator(scale_text=self.lineEdit, cmbScale=self.cmbScale)
         set_scale.scaleSTL()
+
     def scale_print(self):
         print(self.cmbScale.currentText())
 
@@ -107,9 +120,7 @@ class PrintYour3DDialog(QtWidgets.QDialog, FORM_CLASS):
         self.lineEdit.setText(filename)
 
     def trash_remover(self):
-        trash_path = self.plugin_dir+'/TRASH'
+        trash_path = self.plugin_dir+'/trash'
         for file in os.listdir(trash_path):
             if file == 'merged.tif': pass
             else: os.remove(trash_path+'\\' +f'{file}')
-        #remove = [print('zostaw') if file == 'merged.tif' else os.remove(trash_path+'\\' +f'{file}') for file in os.listdir(trash_path)]
-        #return remove

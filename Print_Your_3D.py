@@ -205,23 +205,23 @@ class PrintYour3D:
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
-            self.first_start = False
-            self.dlg = PrintYour3DDialog()
+
+
+        self.dlg = PrintYour3DDialog()
 
 
         # show the dialog
-            self.dlg.show()
-            self.dlg.trash_remover()
+        self.dlg.show()
+
         # Run the dialog event loop
         result = self.dlg.exec_()
 
         if result:
             self.iface.messageBar().pushMessage(
                 "Success", level=Qgis.Success, duration=3)
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+
+            #function below remove data from plugin/trash directory after close the app
+            self.dlg.trash_remover()
 
 
 

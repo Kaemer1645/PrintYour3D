@@ -16,12 +16,12 @@ class Scalator:
         scale = scale.split(':')
         if scale[0] == '1':
             self.small_scale = int(scale[1])
-            print(self.small_scale)
+            #print(self.small_scale)
             model.scale(float(1/self.small_scale))
             model.write_text_stl(str(self.scale_text.text()).strip('.stl') +'_' + str(self.small_scale) + '.stl')
         else:
             self.big_scale = int(scale[0])
-            print(self.big_scale)
+            #print(self.big_scale)
             model.scale(float(self.big_scale))
             model.write_text_stl(str(self.scale_text.text()).strip('.stl')+ '_' + str(self.big_scale) + '.stl')
 
