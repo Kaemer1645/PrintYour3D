@@ -189,6 +189,22 @@ class Create_model:
                 cords[2] = height_stretched
         return self.list
 
+    def loading(self):
+        """ Loading progress bar """
+
+        self.dialog = QProgressDialog()
+        self.dialog.setWindowTitle("Loading")
+        self.dialog.setLabelText("That's your progress")
+        self.bar = QProgressBar()
+        self.bar.setTextVisible(True)
+        self.dialog.setBar(self.bar)
+        self.dialog.setMinimumWidth(300)
+        self.dialog.show()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.saver)
+        self.timer.start(1000)
+
+
     def shape(self, direction):
         """ This algorithm convert ShapeFile to the .tif file.
         To created that process I used a lot of GDAL processing algorithms
@@ -279,20 +295,7 @@ class Create_model:
         shape_to_raster = QgsProject.instance().mapLayersByName('Shape_to_Raster')
         QgsProject.instance().removeMapLayers([shape_to_raster[0].id()])
 
-    def loading(self):
-        """ Loading progress bar """
 
-        self.dialog = QProgressDialog()
-        self.dialog.setWindowTitle("Loading")
-        self.dialog.setLabelText("That's your progress")
-        self.bar = QProgressBar()
-        self.bar.setTextVisible(True)
-        self.dialog.setBar(self.bar)
-        self.dialog.setMinimumWidth(300)
-        self.dialog.show()
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.saver)
-        self.timer.start(1000)
 
 
 
