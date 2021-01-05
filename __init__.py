@@ -8,7 +8,7 @@
                              -------------------
         begin                : 2020-02-28
         copyright            : (C) 2020 by Szymek Ślęczka
-        email                : szymex23@o2.pl
+        email                : szymonsleczka7@gmail.com
         git sha              : $Format:%H$
  ***************************************************************************/
 

@@ -294,8 +294,3 @@ class Create_model:
 
         shape_to_raster = QgsProject.instance().mapLayersByName('Shape_to_Raster')
         QgsProject.instance().removeMapLayers([shape_to_raster[0].id()])
-
-
-
-
-

@@ -9,7 +9,7 @@
         begin                : 2020-02-28
         git sha              : $Format:%H$
         copyright            : (C) 2020 by Szymek Ślęczka
-        email                : szymex23@o2.pl
+        email                : szymonsleczka7@gmail.com
  ***************************************************************************/
 
 /***************************************************************************
@@ -222,10 +222,3 @@ class PrintYour3D:
 
             #function below remove data from plugin/trash directory after close the app
             self.dlg.trash_remover()
-
-
-
-
-
-
-
