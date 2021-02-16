@@ -2,6 +2,7 @@
 import numpy as np
 import os
 import processing
+from osgeo import gdal
 
 #import delaunay algorithm
 from scipy.spatial import Delaunay
@@ -33,7 +34,6 @@ class Create_model:
         self.dlg = dlg
 
         self.list = []
-        self.list_of_all=[]
         self.border = []
 
         self.X = []
@@ -47,7 +47,7 @@ class Create_model:
     def iterator(self):
         """Main algorithm to iterate through all the pixels and also to create boundaries"""
 
-        self.layer = self.dlg.cmbSelectLayer.currentLayer()
+        '''self.layer = self.dlg.cmbSelectLayer.currentLayer()
 
         #get the extent of layer
         provider = self.layer.dataProvider()
@@ -83,11 +83,68 @@ class Create_model:
         height=[]
         for searching in self.list:
                 height.append(searching[2])
-        self.minimal=min(height)
+        self.minimal=min(height)'''
+
+        ###second - faster algorithm
+
+    def iterator(self):
+        path = iface.activeLayer().source()
+
+        #self.layer = self.dlg.cmbSelectLayer.currentLayer()
+
+        data_source = gdal.Open(path)
+        #extract one band, because we don't need 3d matrix
+        band = data_source.GetRasterBand(1)
+        #read matrix as numpy array
+            
+        raster = band.ReadAsArray().astype(np.float)
+        #threshold = 222 #poziom odniesienia - wyzsze od 222
+        
+        threshold = self.dlg.dsbDatum.value()
+            
+        #change no data to nan value
+        raster[raster == band.GetNoDataValue()] = np.nan
+        raster2 = raster[np.logical_not(np.isnan(raster))]
+
+        (y_index, x_index) = np.nonzero(raster > threshold)
 
 
-        #iterate the raster to get the boundaries
+        #get the minimal value to stretching method
+        self.minimal = np.nanmin(raster)
 
+
+        #To demonstate this compare a.shape to band.XSize and band.YSize
+        (upper_left_x, x_size, x_rotation, upper_left_y, y_rotation, y_size) = data_source.GetGeoTransform()
+            
+        x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
+        y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
+        raster3 = raster2[raster2>threshold]
+        #print(raster3)
+        z_coords = np.asarray(raster3).reshape(-1)
+
+        entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
+        
+        print(raster)
+        #iterowacc granice przez macciezr -raster
+        
+
+
+
+
+
+
+
+
+        self.list = entire_matrix.tolist()
+        return self.list, self.minimal
+
+
+
+
+
+
+
+        '''#iterate the raster to get the boundaries
         colrow=[]
         rowcol=[]
         for pixelo in self.list_of_all:
@@ -115,7 +172,7 @@ class Create_model:
                             self.border.append([pixel[2],pixel[3],pixel[4]])
                             self.list=self.border+self.list
 
-        return self.list, self.minimal
+        return self.list, self.minimal'''
 
 
 
