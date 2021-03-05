@@ -41,14 +41,14 @@ class Create_model:
         self.Z = []
         self.faces = []
         self.points = []
+        self.list_of_all=[]
 
         self.NoData = -3.4028234663852886e+38
 
-    def iterator(self):
+    
+    '''def iterator(self):
         """Main algorithm to iterate through all the pixels and also to create boundaries"""
-
-        '''self.layer = self.dlg.cmbSelectLayer.currentLayer()
-
+        self.layer = self.dlg.cmbSelectLayer.currentLayer()
         #get the extent of layer
         provider = self.layer.dataProvider()
         extent = provider.extent()
@@ -61,7 +61,6 @@ class Create_model:
         xinit = xmin + xsize / 2
         yinit = ymax - ysize / 2
         block = provider.block(1, extent, cols, rows)
-
         #iterate the raster to get the values of pixels
         k=1
         for i in range(rows):
@@ -78,73 +77,12 @@ class Create_model:
                     self.list_of_all.append([i,j,x,y,self.NoData])
             xinit = xmin + xsize / 2
             yinit -= ysize
-
         #get minimal value to stretching method
         height=[]
         for searching in self.list:
                 height.append(searching[2])
-        self.minimal=min(height)'''
-
-        ###second - faster algorithm
-
-    def iterator(self):
-        path = iface.activeLayer().source()
-
-        #self.layer = self.dlg.cmbSelectLayer.currentLayer()
-
-        data_source = gdal.Open(path)
-        #extract one band, because we don't need 3d matrix
-        band = data_source.GetRasterBand(1)
-        #read matrix as numpy array
-            
-        raster = band.ReadAsArray().astype(np.float)
-        #threshold = 222 #poziom odniesienia - wyzsze od 222
-        
-        threshold = self.dlg.dsbDatum.value()
-            
-        #change no data to nan value
-        raster[raster == band.GetNoDataValue()] = np.nan
-        raster2 = raster[np.logical_not(np.isnan(raster))]
-
-        (y_index, x_index) = np.nonzero(raster > threshold)
-
-
-        #get the minimal value to stretching method
-        self.minimal = np.nanmin(raster)
-
-
-        #To demonstate this compare a.shape to band.XSize and band.YSize
-        (upper_left_x, x_size, x_rotation, upper_left_y, y_rotation, y_size) = data_source.GetGeoTransform()
-            
-        x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
-        y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
-        raster3 = raster2[raster2>threshold]
-        #print(raster3)
-        z_coords = np.asarray(raster3).reshape(-1)
-
-        entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
-        
-        print(raster)
-        #iterowacc granice przez macciezr -raster
-        
-
-
-
-
-
-
-
-
-        self.list = entire_matrix.tolist()
-        return self.list, self.minimal
-
-
-
-
-
-
-
-        '''#iterate the raster to get the boundaries
+        self.minimal=min(height)
+        #iterate the raster to get the boundaries
         colrow=[]
         rowcol=[]
         for pixelo in self.list_of_all:
@@ -166,13 +104,100 @@ class Create_model:
                     condition2 = colrow[wii][kol-1][4]
                     condition3 = colrow[wii+1][kol][4]
                     condition4 = colrow[wii][kol+1][4]
-
                     if condition1> self.NoData or condition2> self.NoData or condition3> self.NoData or condition4 > self.NoData:
                         if condition1 == self.NoData or condition2== self.NoData or condition3== self.NoData or condition4 == self.NoData:
                             self.border.append([pixel[2],pixel[3],pixel[4]])
                             self.list=self.border+self.list
 
+        print(self.list)
+        print(len(self.list))
+        
         return self.list, self.minimal'''
+
+
+    def iterator(self):
+        path = iface.activeLayer().source()
+
+        #self.layer = self.dlg.cmbSelectLayer.currentLayer()
+
+        data_source = gdal.Open(path)
+        #extract one band, because we don't need 3d matrix
+        band = data_source.GetRasterBand(1)
+        #read matrix as numpy array
+            
+        raster = band.ReadAsArray().astype(np.float)
+        #threshold = 222 #poziom odniesienia - wyzsze od 222
+        
+        threshold = self.dlg.dsbDatum.value()
+            
+        #change no data to nan value
+        raster[raster == band.GetNoDataValue()] = np.nan
+        raster2 = raster[np.logical_not(np.isnan(raster))]
+        print(raster)
+        (y_index, x_index) = np.nonzero(raster > threshold)
+
+
+        #get the minimal value to stretching method
+        self.minimal = np.nanmin(raster)
+
+
+        #To demonstate this compare a.shape to band.XSize and band.YSize
+        (upper_left_x, x_size, x_rotation, upper_left_y, y_rotation, y_size) = data_source.GetGeoTransform()
+            
+        x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
+        y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
+        raster3 = raster2[raster2>threshold]
+        #print(raster3)
+        z_coords = np.asarray(raster3).reshape(-1)
+
+        entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
+        
+        #print(raster)
+        #iterowacc granice przez macciezr -raster
+        #print(entire_matrix)
+        
+        #add outer
+        bounder = np.pad(raster, pad_width = 1, mode='constant', constant_values=0)
+        bounder[bounder == 0] = np.nan
+        bounder_inner = np.roll(bounder, 1, axis = 0) * np.roll(bounder, -1, axis = 0) * np.roll(bounder, 1, axis = 1) * np.roll(bounder, -1, axis = 1)
+        is_inner = (np.isnan(bounder_inner) == False)
+        b = bounder
+        b[is_inner] = np.nan
+        b[~np.isnan(b)] = 200
+        #print(b)
+        boundary_real = b[1:-1,1:-1]
+        #print('----')
+        print(boundary_real)
+        
+        boundary_real_2 = boundary_real[np.logical_not(np.isnan(boundary_real))]
+
+        #create boundary coordinates
+        (y_index_boundary, x_index_boundary) = np.nonzero(boundary_real==200)
+        
+        
+        x_coords_boundary = x_index_boundary * x_size + upper_left_x + (x_size / 2) #add half the cell size
+        y_coords_boundary = y_index_boundary * y_size + upper_left_y + (y_size / 2) #to centre the point
+        z_coords_boundary = np.asarray(boundary_real_2).reshape(-1)
+        #print(x_coords_boundary)
+        #print(y_coords_boundary)
+        #print(z_coords_boundary)
+        #print(len(x_coords_boundary),len(y_coords_boundary),len(z_coords_boundary))
+        boundary_the_end = np.stack((x_coords_boundary,y_coords_boundary,z_coords_boundary), axis=-1)
+        #print(boundary_the_end)
+        we_are_the_champions = np.concatenate((entire_matrix,boundary_the_end))
+        print(we_are_the_champions)
+                
+
+            
+    
+        self.list = we_are_the_champions.tolist()
+        print(len(self.list))
+        return self.list, self.minimal
+        
+
+
+
+
 
 
 
