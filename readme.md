@@ -1,16 +1,12 @@
-To kod mojej pracy inżynierskiej.
+This is my Thesis Engineering "From raster to 3D model – Preparing data for 3D printing with a Python plugin in the QGIS environment"
 
-Praca polega na tworzeniu modelu 3D w formacie STL w oparciu o raster.
+This project create 3D model based on raster data in STL format.
 
+I learned OOP (Object Oriented Programming) from Mark Lutz "Introduction"
 
+The most important code you can see in create_model.py file.
 
-Programowania obiektowego uczyłem się w książki Marka Lutza "Python. Wprowadzenie".
-
-
-Najważniejszy kod znajduje się w pliku create_model.py
-
-
-Biblioteki jakie wykorzystałem przy tworzeniu tego pluginu to:
+Below you can see libraries which I used to create this plugin:
 
 -PyQt
 -Scipy
