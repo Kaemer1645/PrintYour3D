@@ -78,6 +78,7 @@ class Create_model:
             xinit = xmin + xsize / 2
             yinit -= ysize
         #get minimal value to stretching method
+        print(len(self.list_of_all))
         height=[]
         for searching in self.list:
                 height.append(searching[2])
@@ -95,7 +96,7 @@ class Create_model:
                 if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
                     pixel[4] = float(self.dlg.dsbDatum.value())
                     self.border.append([pixel[2],pixel[3],pixel[4]])
-                    self.list = self.border + self.list
+                    #self.list = self.border + self.list
                 else:
                     wii=pixel[0]
                     kol=pixel[1]
@@ -107,9 +108,10 @@ class Create_model:
                     if condition1> self.NoData or condition2> self.NoData or condition3> self.NoData or condition4 > self.NoData:
                         if condition1 == self.NoData or condition2== self.NoData or condition3== self.NoData or condition4 == self.NoData:
                             self.border.append([pixel[2],pixel[3],pixel[4]])
-                            self.list=self.border+self.list
-
-        print(self.list)
+                            #self.list=self.border+self.list
+        self.list += self.border    
+        print(len(self.border))
+        #print(self.list)
         print(len(self.list))
         
         return self.list, self.minimal'''
@@ -132,10 +134,10 @@ class Create_model:
             
         #change no data to nan value
         raster[raster == band.GetNoDataValue()] = np.nan
-        raster2 = raster[np.logical_not(np.isnan(raster))]
-        print(raster)
-        (y_index, x_index) = np.nonzero(raster > threshold)
-
+        raster2 = raster[np.logical_not(np.isnan(raster))] #w raster2 nie mam nanow i sa to tylko wartosci wysokosci
+        #print(raster2)
+        (y_index, x_index) = np.nonzero(raster >= threshold)
+        #print(y_index, x_index)
 
         #get the minimal value to stretching method
         self.minimal = np.nanmin(raster)
@@ -146,52 +148,55 @@ class Create_model:
             
         x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
         y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
-        raster3 = raster2[raster2>threshold]
+        raster3 = raster2[raster2>=threshold]
         #print(raster3)
         z_coords = np.asarray(raster3).reshape(-1)
 
         entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
-        
-        #print(raster)
-        #iterowacc granice przez macciezr -raster
-        #print(entire_matrix)
-        
+
+
         #add outer
-        bounder = np.pad(raster, pad_width = 1, mode='constant', constant_values=0)
-        bounder[bounder == 0] = np.nan
-        bounder_inner = np.roll(bounder, 1, axis = 0) * np.roll(bounder, -1, axis = 0) * np.roll(bounder, 1, axis = 1) * np.roll(bounder, -1, axis = 1)
+        bounder = np.pad(raster, pad_width = 1, mode='constant', constant_values=np.nan)
+        bounder_inner = (np.roll(bounder, 1, axis = 0) * np.roll(bounder, -1, axis = 0) * np.roll(bounder, 1, axis = 1) * np.roll(bounder, -1, axis = 1) * np.roll(np.roll(bounder,1,axis=0),1,axis=1)
+             * np.roll(np.roll(bounder,1,axis=0),-1,axis=1) * np.roll(np.roll(bounder,-1,axis=0),1,axis=1) * np.roll(np.roll(bounder,-1,axis=0),-1,axis=1))
         is_inner = (np.isnan(bounder_inner) == False)
         b = bounder
         b[is_inner] = np.nan
-        b[~np.isnan(b)] = 200
-        #print(b)
+        b[~np.isnan(b)] = threshold
         boundary_real = b[1:-1,1:-1]
-        #print('----')
-        print(boundary_real)
-        
-        boundary_real_2 = boundary_real[np.logical_not(np.isnan(boundary_real))]
 
+        boundary_real_2 = boundary_real[np.logical_not(np.isnan(boundary_real))]
+        
         #create boundary coordinates
-        (y_index_boundary, x_index_boundary) = np.nonzero(boundary_real==200)
+        (y_index_boundary, x_index_boundary) = np.nonzero(boundary_real==threshold)
         
-        
+        #print(len(boundary_real_2))
         x_coords_boundary = x_index_boundary * x_size + upper_left_x + (x_size / 2) #add half the cell size
         y_coords_boundary = y_index_boundary * y_size + upper_left_y + (y_size / 2) #to centre the point
         z_coords_boundary = np.asarray(boundary_real_2).reshape(-1)
-        #print(x_coords_boundary)
-        #print(y_coords_boundary)
-        #print(z_coords_boundary)
-        #print(len(x_coords_boundary),len(y_coords_boundary),len(z_coords_boundary))
+
+
         boundary_the_end = np.stack((x_coords_boundary,y_coords_boundary,z_coords_boundary), axis=-1)
+        #boundary_the_end = np.repeat(boundary_the_end,30,axis=0)
+
+
+
+
+
+
+
         #print(boundary_the_end)
         we_are_the_champions = np.concatenate((entire_matrix,boundary_the_end))
-        print(we_are_the_champions)
+        #print(we_are_the_champions)
                 
-
-            
-    
-        self.list = we_are_the_champions.tolist()
+        self.list = we_are_the_champions
         print(len(self.list))
+
+        #for row in self.list:
+            #print(row)
+
+    
+        #print(len(self.list))
         return self.list, self.minimal
         
 
@@ -205,8 +210,8 @@ class Create_model:
         """This is Delaunay algorithm from Scipy lib
         This is needed to create vertices and faces which will be going to executed in creating STL model"""
 
-
-        for x in self.list:
+        
+        '''for x in self.list:
             x_cord = x[0]
             self.X.append(x_cord)
             y_cord = x[1]
@@ -215,9 +220,15 @@ class Create_model:
             self.Z.append(z_cord)
         self.x = np.array(self.X)
         self.y = np.array(self.Y)
-        self.z = np.array(self.Z)
+        self.z = np.array(self.Z)'''
 
-        self.tri = Delaunay(np.array([self.x, self.y]).T, qhull_options=None)
+
+        self.x = self.list[:,0]
+        self.y = self.list[:,1]
+        self.z = self.list[:,2]
+
+        print(self.x.shape)
+        self.tri = Delaunay(np.array([self.x, self.y, self.z]).T)
         for vert in self.tri.simplices:
             self.faces.append([vert[0], vert[1], vert[2]])
         for i in range(self.x.shape[0]):
