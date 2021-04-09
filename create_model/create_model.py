@@ -187,6 +187,9 @@ class Create_model:
 
         #print(boundary_the_end)
         we_are_the_champions = np.concatenate((entire_matrix,boundary_the_end))
+        we_are_the_champions[we_are_the_champions[:, [0,1,2]].argsort()]
+        #we_are_the_champions = we_are_the_champions[np.argsort(we_are_the_champions[:, 0])]
+
         #print(we_are_the_champions)
                 
         self.list = we_are_the_champions
