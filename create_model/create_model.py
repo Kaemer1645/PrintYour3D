@@ -33,7 +33,7 @@ class Create_model:
         self.bar = QProgressBar()
         self.dlg = dlg
 
-        self.list = []
+        #self.list = []
         self.border = []
 
         self.X = []
@@ -41,7 +41,7 @@ class Create_model:
         self.Z = []
         self.faces = []
         self.points = []
-        self.list_of_all=[]
+        #self.list_of_all=[]
 
         self.NoData = -3.4028234663852886e+38
 
@@ -118,9 +118,9 @@ class Create_model:
 
 
     def iterator(self):
-        path = iface.activeLayer().source()
+        #path = iface.activeLayer().source()
 
-        #self.layer = self.dlg.cmbSelectLayer.currentLayer()
+        path = self.dlg.cmbSelectLayer.currentLayer().source()
 
         data_source = gdal.Open(path)
         #extract one band, because we don't need 3d matrix
@@ -135,9 +135,7 @@ class Create_model:
         #change no data to nan value
         raster[raster == band.GetNoDataValue()] = np.nan
         raster2 = raster[np.logical_not(np.isnan(raster))] #w raster2 nie mam nanow i sa to tylko wartosci wysokosci
-        #print(raster2)
         (y_index, x_index) = np.nonzero(raster >= threshold)
-        #print(y_index, x_index)
 
         #get the minimal value to stretching method
         self.minimal = np.nanmin(raster)
@@ -149,7 +147,6 @@ class Create_model:
         x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
         y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
         raster3 = raster2[raster2>=threshold]
-        #print(raster3)
         z_coords = np.asarray(raster3).reshape(-1)
 
         entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
@@ -177,61 +174,24 @@ class Create_model:
 
 
         boundary_the_end = np.stack((x_coords_boundary,y_coords_boundary,z_coords_boundary), axis=-1)
-        #boundary_the_end = np.repeat(boundary_the_end,30,axis=0)
+        boundary_the_end = np.repeat(boundary_the_end,10,axis=0)
 
-
-
-
-
-
-
-        #print(boundary_the_end)
-        we_are_the_champions = np.concatenate((entire_matrix,boundary_the_end))
-        we_are_the_champions[we_are_the_champions[:, [0,1,2]].argsort()]
-        #we_are_the_champions = we_are_the_champions[np.argsort(we_are_the_champions[:, 0])]
-
-        #print(we_are_the_champions)
-                
-        self.list = we_are_the_champions
-        print(len(self.list))
-
-        #for row in self.list:
-            #print(row)
-
+        self.entire_mat_with_heights = np.concatenate((entire_matrix,boundary_the_end))
+        #entire_mat_with_heights[entire_mat_with_heights[:, [0,1,2]].argsort()]
+        self.entire_mat_with_heights = self.entire_mat_with_heights[np.argsort(self.entire_mat_with_heights[:, 2])]
     
-        #print(len(self.list))
-        return self.list, self.minimal
-        
-
-
-
-
-
-
+        return self.entire_mat_with_heights, self.minimal
 
     def delaunay(self):
         """This is Delaunay algorithm from Scipy lib
         This is needed to create vertices and faces which will be going to executed in creating STL model"""
 
-        
-        '''for x in self.list:
-            x_cord = x[0]
-            self.X.append(x_cord)
-            y_cord = x[1]
-            self.Y.append(y_cord)
-            z_cord = x[2]
-            self.Z.append(z_cord)
-        self.x = np.array(self.X)
-        self.y = np.array(self.Y)
-        self.z = np.array(self.Z)'''
+        self.x = self.entire_mat_with_heights[:,0]
+        self.y = self.entire_mat_with_heights[:,1]
+        self.z = self.entire_mat_with_heights[:,2]
 
-
-        self.x = self.list[:,0]
-        self.y = self.list[:,1]
-        self.z = self.list[:,2]
-
-        print(self.x.shape)
-        self.tri = Delaunay(np.array([self.x, self.y, self.z]).T)
+        #print(self.x.shape)
+        self.tri = Delaunay(np.array([self.x, self.y]).T)
         for vert in self.tri.simplices:
             self.faces.append([vert[0], vert[1], vert[2]])
         for i in range(self.x.shape[0]):
@@ -277,13 +237,13 @@ class Create_model:
 
     def stretching(self):
         """ This method stretching the entire model to the given Datum level"""
-        for cords in self.list:
+        for cords in self.entire_mat_with_heights:
             if cords[2] > self.minimal:
                 height_stretched = cords[2] - float(self.dlg.dsbDatum.value())
                 height_stretched = height_stretched * self.dlg.sbStretch.value()
                 height_stretched += float(self.dlg.dsbDatum.value())
                 cords[2] = height_stretched
-        return self.list
+        return self.entire_mat_with_heights
 
     def loading(self):
         """ Loading progress bar """

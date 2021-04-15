@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>561</width>
-    <height>663</height>
+    <height>667</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -37,7 +37,14 @@
       </spacer>
      </item>
      <item>
-      <widget class="QgsMapLayerComboBox" name="cmbSelectLayer"/>
+      <widget class="QgsMapLayerComboBox" name="cmbSelectLayer">
+       <property name="minimumSize">
+        <size>
+         <width>200</width>
+         <height>0</height>
+        </size>
+       </property>
+      </widget>
      </item>
      <item>
       <spacer name="horizontalSpacer_5">
