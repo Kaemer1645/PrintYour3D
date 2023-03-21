@@ -44,16 +44,6 @@ from .resources import *
 from .Print_Your_3D_dialog import PrintYour3DDialog
 
 
-
-
-
-
-
-
-
-
-
-
 class PrintYour3D:
     """QGIS Plugin Implementation."""
     def __init__(self, iface):
@@ -181,7 +171,7 @@ class PrintYour3D:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/Print_Your_3D/icon.png'
+        icon_path = ':/plugins/Print_Your_3D/icons/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Print Your 3D'),

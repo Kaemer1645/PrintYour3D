@@ -1,0 +1,10 @@
+ver. 0.2.0
+-I improved GUI
+-The code was optimized: 
+I used newest form of methods to buttons;
+The code is shortened;
+
+ver. 0.1
+This is the first version PrintYour3D
+While I start writing this program i didn't keep an inventory in the form
+of changelog.

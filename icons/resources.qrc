@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/Print_Your_3D" >
+    <qresource prefix="/plugins/Print_Your_3D/icons" >
         <file>icon.png</file>
     </qresource>
 </RCC>

@@ -1,39 +1,35 @@
-#import from main libraries
+# import from main libraries
 import numpy as np
 import os
 import processing
 from osgeo import gdal
 
-#import delaunay algorithm
-from scipy.spatial import Delaunay
-
-#import from numpy-stl library
-from .stl import mesh
-
-#import from qgis library
+# import from qgis library
 from qgis.utils import iface
 from qgis.PyQt.QtWidgets import QProgressBar, QProgressDialog
 from qgis.PyQt.QtCore import QTimer
 from qgis.core import QgsProject, QgsMapLayer
 
-#import matplotlib to create graph
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.tri as mtri
+# import delaunay algorithm
+from scipy.spatial import Delaunay
 
-#that class have got entire algorithm to create a model
+# import from numpy-stl library
+from .stl import mesh
+
+# import matplotlib to create graph
+import matplotlib.pyplot as plt
+
+# that class have got entire algorithm to create a model
 
 class Create_model:
-
-    def __init__(self, dlg, current_layer):
+    def __init__(self, dlg, raster_layer):
         """This constructor need Qt Dialog  class as dlg and need current layer to execute the algorithm
         in current_layer parameter"""
 
-        self.layers = current_layer
+        self.raster_layer = raster_layer
         self.bar = QProgressBar()
         self.dlg = dlg
 
-        #self.list = []
         self.border = []
 
         self.X = []
@@ -41,163 +37,84 @@ class Create_model:
         self.Z = []
         self.faces = []
         self.points = []
-        #self.list_of_all=[]
-
-        self.NoData = -3.4028234663852886e+38
-
-    
-    '''def iterator(self):
-        """Main algorithm to iterate through all the pixels and also to create boundaries"""
-        self.layer = self.dlg.cmbSelectLayer.currentLayer()
-        #get the extent of layer
-        provider = self.layer.dataProvider()
-        extent = provider.extent()
-        xmin = extent.xMinimum()
-        ymax = extent.yMaximum()
-        rows = self.layer.height()
-        cols = self.layer.width()
-        xsize = self.layer.rasterUnitsPerPixelX()
-        ysize = self.layer.rasterUnitsPerPixelY()
-        xinit = xmin + xsize / 2
-        yinit = ymax - ysize / 2
-        block = provider.block(1, extent, cols, rows)
-        #iterate the raster to get the values of pixels
-        k=1
-        for i in range(rows):
-            for j in range(cols):
-                x = xinit + j * xsize
-                y = yinit
-                k += 1
-                if block.value(i, j)  == self.NoData:
-                    self.list_of_all.append([i,j,x,y,block.value(i,j)])
-                elif block.value(i,j)>=self.dlg.dsbDatum.value():
-                    self.list.append([x, y, block.value(i, j)])
-                    self.list_of_all.append([i,j,x,y,block.value(i,j)])
-                else:
-                    self.list_of_all.append([i,j,x,y,self.NoData])
-            xinit = xmin + xsize / 2
-            yinit -= ysize
-        #get minimal value to stretching method
-        print(len(self.list_of_all))
-        height=[]
-        for searching in self.list:
-                height.append(searching[2])
-        self.minimal=min(height)
-        #iterate the raster to get the boundaries
-        colrow=[]
-        rowcol=[]
-        for pixelo in self.list_of_all:
-            rowcol.append(pixelo)
-            if pixelo[1]==j:
-                colrow.append(rowcol)
-                rowcol=[]
-        for pixel in self.list_of_all:
-            if pixel[4] != self.NoData:
-                if pixel[0]==0 or pixel[1]==0 or pixel[0]==i or pixel[1]==j:
-                    pixel[4] = float(self.dlg.dsbDatum.value())
-                    self.border.append([pixel[2],pixel[3],pixel[4]])
-                    #self.list = self.border + self.list
-                else:
-                    wii=pixel[0]
-                    kol=pixel[1]
-                    pixel[4]=float(self.dlg.dsbDatum.value())
-                    condition1 = colrow[wii-1][kol][4]
-                    condition2 = colrow[wii][kol-1][4]
-                    condition3 = colrow[wii+1][kol][4]
-                    condition4 = colrow[wii][kol+1][4]
-                    if condition1> self.NoData or condition2> self.NoData or condition3> self.NoData or condition4 > self.NoData:
-                        if condition1 == self.NoData or condition2== self.NoData or condition3== self.NoData or condition4 == self.NoData:
-                            self.border.append([pixel[2],pixel[3],pixel[4]])
-                            #self.list=self.border+self.list
-        self.list += self.border    
-        print(len(self.border))
-        #print(self.list)
-        print(len(self.list))
-        
-        return self.list, self.minimal'''
-
 
     def iterator(self):
-        #path = iface.activeLayer().source()
+        """Method to get values of raster with outer snapped to the reference level"""
+        path_to_raster_layer = self.raster_layer.source()
 
-        path = self.dlg.cmbSelectLayer.currentLayer().source()
+        data_source = gdal.Open(path_to_raster_layer)
 
-        data_source = gdal.Open(path)
-        #extract one band, because we don't need 3d matrix
+        # extract one band, because we don't need 3d matrix
         band = data_source.GetRasterBand(1)
-        #read matrix as numpy array
-            
+
+        # read matrix as numpy array
         raster = band.ReadAsArray().astype(np.float)
-        #threshold = 222 #poziom odniesienia - wyzsze od 222
-        
-        threshold = self.dlg.dsbDatum.value()
-            
-        #change no data to nan value
+
+        threshold = self.dlg.dsbDatum.value()  # get raster base lavel
+
+        # change no data to nan value
         raster[raster == band.GetNoDataValue()] = np.nan
-        raster2 = raster[np.logical_not(np.isnan(raster))] #w raster2 nie mam nanow i sa to tylko wartosci wysokosci
+        raster2 = raster[np.logical_not(np.isnan(raster))]  # w raster2 nie mam nanow i sa to tylko wartosci wysokosci
         (y_index, x_index) = np.nonzero(raster >= threshold)
 
-        #get the minimal value to stretching method
+        # get the minimal value to stretching method
         self.minimal = np.nanmin(raster)
 
-
-        #To demonstate this compare a.shape to band.XSize and band.YSize
+        # To demonstate this compare a.shape to band.XSize and band.YSize
         (upper_left_x, x_size, x_rotation, upper_left_y, y_rotation, y_size) = data_source.GetGeoTransform()
-            
-        x_coords = x_index * x_size + upper_left_x + (x_size / 2) #add half the cell size
-        y_coords = y_index * y_size + upper_left_y + (y_size / 2) #to centre the point
-        raster3 = raster2[raster2>=threshold]
+
+        x_coords = x_index * x_size + upper_left_x + (x_size / 2)  # add half the cell size
+        y_coords = y_index * y_size + upper_left_y + (y_size / 2)  # to centre the point
+        raster3 = raster2[raster2 >= threshold]
         z_coords = np.asarray(raster3).reshape(-1)
 
-        entire_matrix = np.stack((x_coords,y_coords,z_coords), axis=-1)
+        entire_matrix = np.stack((x_coords, y_coords, z_coords), axis=-1)
 
-
-        #add outer
-        bounder = np.pad(raster, pad_width = 1, mode='constant', constant_values=np.nan)
-        bounder_inner = (np.roll(bounder, 1, axis = 0) * np.roll(bounder, -1, axis = 0) * np.roll(bounder, 1, axis = 1) * np.roll(bounder, -1, axis = 1) * np.roll(np.roll(bounder,1,axis=0),1,axis=1)
-             * np.roll(np.roll(bounder,1,axis=0),-1,axis=1) * np.roll(np.roll(bounder,-1,axis=0),1,axis=1) * np.roll(np.roll(bounder,-1,axis=0),-1,axis=1))
+        # add outer
+        bounder = np.pad(raster, pad_width=1, mode='constant', constant_values=np.nan)
+        bounder_inner = (
+                    np.roll(bounder, 1, axis=0) * np.roll(bounder, -1, axis=0) * np.roll(bounder, 1, axis=1) * np.roll(
+                bounder, -1, axis=1) * np.roll(np.roll(bounder, 1, axis=0), 1, axis=1)
+                    * np.roll(np.roll(bounder, 1, axis=0), -1, axis=1) * np.roll(np.roll(bounder, -1, axis=0), 1,
+                                                                                 axis=1) * np.roll(
+                np.roll(bounder, -1, axis=0), -1, axis=1))
         is_inner = (np.isnan(bounder_inner) == False)
         b = bounder
         b[is_inner] = np.nan
         b[~np.isnan(b)] = threshold
-        boundary_real = b[1:-1,1:-1]
+        boundary_real = b[1:-1, 1:-1]
 
         boundary_real_2 = boundary_real[np.logical_not(np.isnan(boundary_real))]
-        
-        #create boundary coordinates
-        (y_index_boundary, x_index_boundary) = np.nonzero(boundary_real==threshold)
-        
-        #print(len(boundary_real_2))
-        x_coords_boundary = x_index_boundary * x_size + upper_left_x + (x_size / 2) #add half the cell size
-        y_coords_boundary = y_index_boundary * y_size + upper_left_y + (y_size / 2) #to centre the point
+
+        # create boundary coordinates
+        (y_index_boundary, x_index_boundary) = np.nonzero(boundary_real == threshold)
+
+        # print(len(boundary_real_2))
+        x_coords_boundary = x_index_boundary * x_size + upper_left_x + (x_size / 2)  # add half the cell size
+        y_coords_boundary = y_index_boundary * y_size + upper_left_y + (y_size / 2)  # to centre the point
         z_coords_boundary = np.asarray(boundary_real_2).reshape(-1)
 
+        boundary_the_end = np.stack((x_coords_boundary, y_coords_boundary, z_coords_boundary), axis=-1)
+        boundary_the_end = np.repeat(boundary_the_end, 10, axis=0)
 
-        boundary_the_end = np.stack((x_coords_boundary,y_coords_boundary,z_coords_boundary), axis=-1)
-        boundary_the_end = np.repeat(boundary_the_end,10,axis=0)
-
-        self.entire_mat_with_heights = np.concatenate((entire_matrix,boundary_the_end))
-        #entire_mat_with_heights[entire_mat_with_heights[:, [0,1,2]].argsort()]
+        self.entire_mat_with_heights = np.concatenate((entire_matrix, boundary_the_end))
+        # entire_mat_with_heights[entire_mat_with_heights[:, [0,1,2]].argsort()]
         self.entire_mat_with_heights = self.entire_mat_with_heights[np.argsort(self.entire_mat_with_heights[:, 2])]
-    
-        return self.entire_mat_with_heights, self.minimal
 
     def delaunay(self):
         """This is Delaunay algorithm from Scipy lib
         This is needed to create vertices and faces which will be going to executed in creating STL model"""
 
-        self.x = self.entire_mat_with_heights[:,0]
-        self.y = self.entire_mat_with_heights[:,1]
-        self.z = self.entire_mat_with_heights[:,2]
+        self.x = self.entire_mat_with_heights[:, 0]
+        self.y = self.entire_mat_with_heights[:, 1]
+        self.z = self.entire_mat_with_heights[:, 2]
 
-        #print(self.x.shape)
+        # print(self.x.shape)
         self.tri = Delaunay(np.array([self.x, self.y]).T)
         for vert in self.tri.simplices:
             self.faces.append([vert[0], vert[1], vert[2]])
         for i in range(self.x.shape[0]):
             self.points.append([self.x[i], self.y[i], self.z[i]])
-
-        return self.faces, self.points, self.x, self.y, self.z, self.tri
 
     def saver(self):
         """ Create STL model """
@@ -219,9 +136,8 @@ class Create_model:
             for j in range(3):
                 self.figure.vectors[i][j] = vertices[f[j], :]
 
-        filename=self.dlg.lineEdit.text()
+        filename = self.dlg.lineEdit.text()
         self.figure.save(filename)
-        return self.figure
 
     def create_graph(self):
         """ Visualize model by Matplotlib lib"""
@@ -243,9 +159,8 @@ class Create_model:
                 height_stretched = height_stretched * self.dlg.sbStretch.value()
                 height_stretched += float(self.dlg.dsbDatum.value())
                 cords[2] = height_stretched
-        return self.entire_mat_with_heights
 
-    def loading(self):
+    def loading(self):  # stworzyc calkowicie na nowo
         """ Loading progress bar """
 
         self.dialog = QProgressDialog()
@@ -259,7 +174,6 @@ class Create_model:
         self.timer = QTimer()
         self.timer.timeout.connect(self.saver)
         self.timer.start(1000)
-
 
     def shape(self, direction):
         """ This algorithm convert ShapeFile to the .tif file.
